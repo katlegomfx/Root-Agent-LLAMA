@@ -57,11 +57,31 @@ $ python main.py
 ```
 
 ## Usage Examples
-> Hello, AI!
-Hello! How can I assist you today?
+> User: Hello, AI!
+> AI: Hello! How can I assist you today?
 
-> self Improve the code by adding more comments
-Here’s how we can enhance the code...
+> User: self Improve the code by adding more comments
+> AI: Here’s how we can enhance the code...
 
-> fix Add better exception handling
-To handle exceptions more gracefully, we could...
+> User: fix Add better exception handling
+> AI: To handle exceptions more gracefully, we could...
+
+### activate virtual environment
+
+run in Windows CMD for best expirence
+```sh
+    venv\Scripts\activate.bat
+```
+
+run in Windows Powershell for best expirence
+```sh
+    venv\Scripts\Activate.ps1
+```
+
+run in Windows Bash
+```sh
+    source venv/Scripts/activate
+```
+
+
+### activate virtual environment

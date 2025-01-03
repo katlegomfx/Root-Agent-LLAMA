@@ -1,5 +1,5 @@
 asyncio
 ollama
-python-dotenv
-requests
 prompt-toolkit
+requests
+python-dotenv
