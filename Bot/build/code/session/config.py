@@ -15,8 +15,7 @@ build_paths = [
     ai_results_path,
     ai_summaries_path,
     ai_history_path,
-    gen_ai_path
 ]
 
 for path in build_paths:
-    os.makedirs(os.path.join('gen_ai', path), exist_ok=True)
+    os.makedirs(os.path.join(gen_ai_path, path), exist_ok=True)

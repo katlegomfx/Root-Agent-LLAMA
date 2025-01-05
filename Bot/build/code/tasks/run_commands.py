@@ -14,19 +14,19 @@ def execute_bash_command(command: str) -> str:
     Returns:
         str: The output of the executed bash command.
     """
-
     try:
         if isinstance(command, dict):
             # Check if 'command' key exists in the dictionary
             if 'command' in command:
                 # Execute the command with its value
-                run_command = (command['command'],)
+                run_command = command['command'].split()
 
             elif 'bash_command' in command:
                 # Use the bash_command directly
-                run_command = (command['bash_command'],)
+                run_command = command['bash_command'].split()
             else:
                 raise ValueError("Command dictionary is missing required key")
+            
         elif isinstance(command, list):
             # If it's a list, use it as-is
             run_command = command

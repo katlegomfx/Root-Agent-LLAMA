@@ -1,5 +1,3 @@
-# base_execute.py
-
 from typing import Dict, Any
 from Bot.build.code.tasks.run_commands import (
     execute_bash_command,

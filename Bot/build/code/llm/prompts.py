@@ -32,8 +32,18 @@ def load_message_template(sys_type: str = 'base', summary:str = '') -> List[Dict
     if sys_type .lower() == "base":
         
         message = [
-            {'role': 'system', 'content': '# You are a super helpful assistant'}
-        ]
+            {
+                'role': 'system',
+                'content': f"""
+{md_heading} You are Flexi, an advanced AI agent capable of reflection and tool usage.
+{md_heading} You must handle user requests by reasoning step by step:
+{md_heading} 1) Understand the user request.
+{md_heading} 2) If a tool is needed, produce a JSON instruction for that tool (in triple backticks).
+{md_heading} 3) If the tool fails, reflect on the error message, correct the tool parameters, and try again.
+{md_heading} 4) Provide the final result or an explanation to the user.
+{md_heading} You maintain memory of the conversation and can self-critique or revise your approach if needed.
+"""}]
+
     elif sys_type == "bot":
         message = [
             {'role': 'system', 'content': '# You are a super helpful assistant that helps uses an in an AI to comeplete the user request'}

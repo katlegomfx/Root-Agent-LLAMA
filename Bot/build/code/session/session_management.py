@@ -1,43 +1,64 @@
 import os
 import json
+from typing import Optional
+
+from Bot.build.code.tasks.improver import analyze, improve, refine
+from .state import SelfImprovementState, Step
+
+
 class SessionManager:
     def __init__(self, session_file: str = 'session.json'):
         self.session_file = session_file
+        self.state: Optional[SelfImprovementState] = None
         if os.path.exists(self.session_file):
-            restore = input("Restore the last session? (y/n): ").strip().lower()
+            restore = input(
+                "Restore the last session? (y/n): ").strip().lower()
             if restore == 'y':
                 self.load_session()
 
-    def autosave_session(self):
-        """Automatically save the session after every command if enabled."""
-        if self.config.getboolean("Settings", "autosave", fallback=True):
-            self.save_session()
 
 
-
-    def save_session(self, session_data: dict) -> None:
+    def save_session(self):
         """Save session data to a JSON file."""
         try:
-            with open(self.session_file, 'w', encoding='utf-8') as f:
-                json.dump(session_data, f, indent=4)
-            print(f"Session successfully saved to {self.session_file}.")
+            if self.state:
+                with open(self.session_file, 'w', encoding='utf-8') as f:
+                    json.dump(self.state.__dict__, f, indent=4)
+                print(f"Session successfully saved to {self.session_file}.")
+            else:
+                print("No session state to save.")
         except Exception as e:
             print(f"Error saving session: {e}")
 
-    def load_session(self) -> dict:
-        """Load session data from a JSON file."""
-        if not os.path.exists(self.session_file):
-            print(f"Session file {self.session_file} does not exist.")
-            return {}
 
+    def load_session(self):
+        """Load session data from a JSON file."""
         try:
             with open(self.session_file, 'r', encoding='utf-8') as f:
-                session_data = json.load(f)
+                data = json.load(f)
+            # Reconstruct SelfImprovementState
+            steps = [Step(**step) for step in data.get('steps', [])]
+            self.state = SelfImprovementState(
+                steps=steps,
+                improvements=data.get('improvements', {}),
+                current_step_index=data.get('current_step_index', 0),
+                completed=data.get('completed', False)
+            )
             print(f"Session successfully loaded from {self.session_file}.")
-            return session_data
         except Exception as e:
             print(f"Error loading session: {e}")
-            return {}
+            self.state = None
+
+    def initialize_new_session(self):
+        """Initialize a new self-improvement session."""
+        self.state = SelfImprovementState(
+            steps=[
+                Step(name="Analyze", action=analyze, params={"state": {}}),
+                Step(name="Improve", action=improve, params={"state": {}}),
+                Step(name="Refine", action=refine, params={"state": {}})
+            ]
+        )
+        self.save_session()
 
     def list_sessions(self, directory: str = '.') -> list:
         """List all available session files in a directory."""
