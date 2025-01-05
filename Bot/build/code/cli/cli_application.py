@@ -39,7 +39,7 @@ class CLIApplication:
             "save_session", "load_session", "list_sessions",
             "option", "clear", "help", "exit",
             "check_docstrings",
-            "auto_improve"
+            "auto_improve", "show_history"
         ]
         self.completer = CLICompleter(self)
         self.session = PromptSession(
@@ -171,7 +171,8 @@ class CLIApplication:
             self.handle_error(e, context="LLM Interaction")
             return ""
 
-    async def handle_command(self, user_input: str):
+
+    async def handle_command(self, user_input: str, speak_back: bool = True):
         """Handle user commands."""
         try:
             if user_input.startswith("clear"):
@@ -185,14 +186,24 @@ class CLIApplication:
                 await self.do_auto_improve(user_input.replace("auto_improve", "").strip())
 
             elif user_input.startswith("start voice"):
-                asyncio.create_task(self.voice_command_listener())
+                if self.voice_listener_task is None or self.voice_listener_task.done():
+                    self.voice_listener_task = asyncio.create_task(
+                        self.voice_command_listener())
+                    await self.speak("Voice command listener started.")
+                else:
+                    await self.speak("Voice command listener is already running.")
 
             elif user_input.startswith("stop voice"):
-                await self.speak("Voice command listener is stopping.")
-                self.stop_event.set()
+                if self.voice_listener_task and not self.voice_listener_task.done():
+                    self.stop_event.set()
+                    await self.voice_listener_task
+                    self.voice_listener_task = None
+                    await self.speak("Voice command listener deactivated.")
+                else:
+                    await self.speak("Voice command listener is not running.")
 
             elif user_input.startswith("summarize"):
-                self.do_summarize(user_input)
+                await self.do_summarize(user_input)
 
             elif user_input.startswith("check_docstrings"):
                 # e.g. "check_docstrings ./myfolder"
@@ -228,8 +239,11 @@ class CLIApplication:
             elif user_input.startswith("help"):
                 self.display_help()
 
+            elif user_input.startswith("show_history"):
+                await self.show_chat_history()
+
             else:
-                await self.process_generic_request(user_input)
+                await self.process_generic_request(user_input, speak_back=speak_back)
 
         except Exception as e:
             self.handle_error(e, context="Command Handling")
@@ -260,6 +274,37 @@ class CLIApplication:
                 "default_option", self.default_option)
 
 
+    async def show_chat_history(self, page: int = 1, page_size: int = 10):
+        """Displays the chat history to the user with pagination."""
+        if not self.messages_context:
+            print("No chat history available.")
+            return
+
+        total_messages = len(self.messages_context)
+        total_pages = (total_messages + page_size - 1) // page_size
+
+        if page < 1 or page > total_pages:
+            print(f"Invalid page number. Please enter a number between 1 and {
+                total_pages}.")
+            return
+
+        start_idx = (page - 1) * page_size
+        end_idx = min(start_idx + page_size, total_messages)
+
+        print(f"\n--- Chat History (Page {page} of {total_pages}) ---\n")
+        for idx, message in enumerate(self.messages_context[start_idx:end_idx], start=start_idx + 1):
+            role = message.get('role', 'Unknown').capitalize()
+            content = message.get('content', '')
+            print(f"{idx}. {role}: {content}\n")
+        print("--- End of Chat History ---\n")
+
+        if page < total_pages:
+            proceed = input(
+                "Do you want to see the next page? (y/n): ").strip().lower()
+            if proceed == 'y':
+                await self.show_chat_history(page=page + 1, page_size=page_size)
+
+
     def display_help(self):
         print("""
         Welcome to CLIApplication!
@@ -271,6 +316,7 @@ class CLIApplication:
         - check_docstrings: check_docstrings multiple files.
         - auto_improve: auto_improve multiple files.
         - summarize: summarize multiple files.
+        - show_history: Display the chat history.
         - start voice: Activate voice command listener.
         - stop voice: Deactivate voice command listener.
             
@@ -285,8 +331,6 @@ class CLIApplication:
         - exit: Exit the application.
         """)
 
-
-    # Inside the CLIApplication class
 
     async def run(self) -> None:
         # Start the voice command listener if needed
@@ -315,317 +359,320 @@ class CLIApplication:
                 self.stop_event.set()
                 break
 
-            await self.handle_command(user_input)
+            await self.handle_command(user_input, speak_back=False)
 
         # After exiting the loop
         await self.speak("Application is shutting down.")
 
-
-    async def process_generic_request(self, user_input: str):
-        """Process generic user input."""
-        # Prepend session chat history to the current messages
-
-
-        messages = load_message_template(
-            sys_type='base', summary=self.summary) + self.messages_context
-        messages.append({'role': 'user', 'content': user_input})
-
-        response = await self.send_and_store_message(messages)
+        async def process_generic_request(self, user_input: str):
+            """Process generic user input."""
+            # Prepend session chat history to the current messages
 
 
-    async def process_code_request(self, user_input: str):
-        """Process a code-related user request."""
-        base_code = read_file_content('main.py')
-        user_request = user_input.replace('code ', '')
+            messages = load_message_template(
+                sys_type='base', summary=self.summary) + self.messages_context
+            messages.append({'role': 'user', 'content': user_input})
 
-        # Prepare prompt with chat history
-        prompt = f"# Considering the following:\n\n{base_code}\n\n# {user_request}"
-        write_content_to_file(prompt, './prompts/gen/code_prompt.md')
-        code_messages = load_message_template(
-            sys_type='python', summary=self.summary) + self.messages_context
-        code_messages.append({'role': 'user', 'content': prompt})
-
-        response = await self.send_and_store_message(code_messages)
-
-    async def process_combine_request(self, user_input: str):
-        base_code = "".join(code_corpus('./Bot'))
-        user_request = f'\n\n# Focus on the following:\n{user_input.replace(
-            "combine ", "")}' if user_input.replace('combine ', '').strip() != '' else ''
-        additional_dir = "".join(code_corpus('./idea'))
-        prompt = f'# Considering the following:\n\n{
-            base_code}\n\n# Incorporate the following:\n\n{additional_dir}{user_request}'
-
-        write_content_to_file(prompt, './prompts/gen/combine_prompt.md')
-
-        code_combine_messages = load_message_template(
-            sys_type='python', summary=self.summary)
-        
-        response = await self.send_and_store_message(code_combine_messages)
+            response = await self.send_and_store_message(messages)
 
 
-    async def do_auto_improve(self, arg):
-        """
-        Automatically improves the initial state by creating a plan, executing steps,        
-        and checking for completion.
+        async def process_code_request(self, user_input: str):
+            """Process a code-related user request."""
+            base_code = read_file_content('main.py')
+            user_request = user_input.replace('code ', '')
 
-        Args:
-            initial_state (dict): The initial state to be improved.
+            # Prepare prompt with chat history
+            prompt = f"# Considering the following:\n\n{base_code}\n\n# {user_request}"
+            write_content_to_file(prompt, './prompts/gen/code_prompt.md')
+            code_messages = load_message_template(
+                sys_type='python', summary=self.summary) + self.messages_context
+            code_messages.append({'role': 'user', 'content': prompt})
 
-        Returns:
-            dict: The final improved state.
-        """
-        # Load self_improvement_state.json if it exists
-        path = 'self_improvement_state.json'
-        if os.path.exists(path):
-            with open(path, 'r') as f:
-                data = json.load(f)
-            # Possibly feed that into a prompt
-            prompt = f"Given the self-improvement plan: {data}..."
-            # Initialize an empty dictionary to store improvements
-            improvements = data
-        else:
-            prompt = "No existing plan. Start from scratch..."
-            improvements = {}
+            response = await self.send_and_store_message(code_messages)
 
-        # Define the possible steps to be taken in each iteration
-        steps = [
-            {
-                "step": "Analyze",
-                "action": analyze,
-                "params": {"state": self.initial_state}
-            },
-            {
-                "step": "Improve",
-                "action": improve,
-                "params": {"state": self.initial_state}
-            },
-            {
-                "step": "Refine",
-                "action": refine,
-                "params": {"state": self.initial_state}
-            }
-        ]
 
-        # Initialize the current state
-        current_state = self.initial_state
+        async def process_combine_request(self, user_input: str):
+            base_code = "".join(code_corpus('./Bot'))
+            user_request = f'\n\n# Focus on the following:\n{user_input.replace(
+                "combine ", "")}' if user_input.replace('combine ', '').strip() != '' else ''
+            additional_dir = "".join(code_corpus('./idea'))
+            prompt = f'# Considering the following:\n\n{
+                base_code}\n\n# Incorporate the following:\n\n{additional_dir}{user_request}'
 
-        # Loop until all steps are completed
-        while len(steps) > 0:
-            # Select the next step to be executed
-            next_step = steps.pop(0)
+            write_content_to_file(prompt, './prompts/gen/combine_prompt.md')
 
-            # Check if the step is already in progress
-            if "in_progress" in current_state and current_state["in_progress"] == next_step["step"]:
-                print(f"Skipping {next_step['step']}, it's already in progress.")
-                continue
+            code_combine_messages = load_message_template(
+                sys_type='python', summary=self.summary)
+            # Ensure prompt is appended
+            code_combine_messages.append({'role': 'user', 'content': prompt})
 
-            messages = load_message_template(sys_type='base')
-            messages.append({'role': 'user', 'content': prompt})
-            # Execute the selected step
-            result = await process_user_messages_with_model(messages, tool_use=True, execute=True)
+            response = await self.send_and_store_message(code_combine_messages)
 
-            # Check for completion
-            if "completed" in current_state:
-                if not current_state["completed"] and next_step["action"] == refine:
-                    print(
-                        f"{next_step['step']} was not completed, skipping to the next iteration.")
+
+
+        async def do_auto_improve(self, arg):
+            """
+            Automatically improves the initial state by creating a plan, executing steps,        
+            and checking for completion.
+
+            Args:
+                initial_state (dict): The initial state to be improved.
+
+            Returns:
+                dict: The final improved state.
+            """
+            # Load self_improvement_state.json if it exists
+            path = 'self_improvement_state.json'
+            if os.path.exists(path):
+                with open(path, 'r') as f:
+                    data = json.load(f)
+                # Possibly feed that into a prompt
+                prompt = f"Given the self-improvement plan: {data}..."
+                # Initialize an empty dictionary to store improvements
+                improvements = data
+            else:
+                prompt = "No existing plan. Start from scratch..."
+                improvements = {}
+
+            # Define the possible steps to be taken in each iteration
+            steps = [
+                {
+                    "step": "Analyze",
+                    "action": analyze,
+                    "params": {"state": self.initial_state}
+                },
+                {
+                    "step": "Improve",
+                    "action": improve,
+                    "params": {"state": self.initial_state}
+                },
+                {
+                    "step": "Refine",
+                    "action": refine,
+                    "params": {"state": self.initial_state}
+                }
+            ]
+
+            # Initialize the current state
+            current_state = self.initial_state
+
+            # Loop until all steps are completed
+            while len(steps) > 0:
+                # Select the next step to be executed
+                next_step = steps.pop(0)
+
+                # Check if the step is already in progress
+                if "in_progress" in current_state and current_state["in_progress"] == next_step["step"]:
+                    print(f"Skipping {next_step['step']}, it's already in progress.")
                     continue
 
-            # Update the current state with the result of the step execution
-            improvements[next_step["step"]] = {"result": result}
+                messages = load_message_template(sys_type='base')
+                messages.append({'role': 'user', 'content': prompt})
+                # Execute the selected step
+                result = await process_user_messages_with_model(messages, tool_use=True, execute=True)
 
-            # Update the in_progress flag if the step is completed
-            if "completed" not in current_state and result:
-                current_state["in_progress"] = next_step["step"]
-                print(f"{next_step['step']} was completed.")
+                # Check for completion
+                if "completed" in current_state:
+                    if not current_state["completed"] and next_step["action"] == refine:
+                        print(
+                            f"{next_step['step']} was not completed, skipping to the next iteration.")
+                        continue
 
-        return improvements
+                # Update the current state with the result of the step execution
+                improvements[next_step["step"]] = {"result": result}
+
+                # Update the in_progress flag if the step is completed
+                if "completed" not in current_state and result:
+                    current_state["in_progress"] = next_step["step"]
+                    print(f"{next_step['step']} was completed.")
+
+            return improvements
 
 
-    async def do_summarize(self, arg):
-        """Summarize the chat or code context."""
-        if not self.messages_context:
-            print("No context to summarize.")
-            return
-        summary_result = await get_message_context_summary(self.messages_context)
-        print("Summary:", summary_result)
+        async def do_summarize(self, arg):
+            """Summarize the chat or code context."""
+            if not self.messages_context:
+                print("No context to summarize.")
+                return
+            summary_result = await get_message_context_summary(self.messages_context)
+            print("Summary:", summary_result)
 
-    def do_check_docstrings(self, arg):
-        """check_docstrings <file_or_directory> - Find functions/classes without docstrings."""
-        path = arg.strip() or '.'
-        results = find_functions_without_docstrings(path)
-        if not results:
-            print("No missing docstrings found.")
-        else:
-            for item in results:
-                print(f"Missing docstring: {item}")
+        def do_check_docstrings(self, arg):
+            """check_docstrings <file_or_directory> - Find functions/classes without docstrings."""
+            path = arg.strip() or '.'
+            results = find_functions_without_docstrings(path)
+            if not results:
+                print("No missing docstrings found.")
+            else:
+                for item in results:
+                    print(f"Missing docstring: {item}")
 
-    async def process_flex_request(self, user_input: str):
-        base_code = "".join(code_corpus('./Bot'))
+        async def process_flex_request(self, user_input: str):
+            base_code = "".join(code_corpus('./Bot'))
 
-        goal = f"Incorporate the following:\n\n## main.py:\n{
-            read_file_content('main.py')}\n"
-        user_request = user_input.replace('flex ', '')
+            goal = f"Incorporate the following:\n\n## main.py:\n{
+                read_file_content('main.py')}\n"
+            user_request = user_input.replace('flex ', '')
 
-        if len(user_request) >= 3:
-            final_request = f"\n\n# {user_request}"
+            if len(user_request) >= 3:
+                final_request = f"\n\n# {user_request}"
+                prompt = f'# Considering the following:\n\n{
+                    base_code}\n\n# {goal}{final_request}'
+            else:
+                prompt = f'# Considering the following:\n\n{
+                    base_code}\n\n# {goal}'
+
+            write_content_to_file(prompt, './prompts/gen/self_prompt.md')
+
+            code_flex_messages = load_message_template(
+                sys_type='python', summary=self.summary)
+            code_flex_messages.append({'role': 'user', 'content': prompt})
+            response = await self.send_and_store_message(code_flex_messages)
+
+        async def process_self_request(self, user_input: str):
+            base_code = "".join(code_corpus('./Bot'))
+            user_request = user_input.replace('self ', '')
             prompt = f'# Considering the following:\n\n{
-                base_code}\n\n# {goal}{final_request}'
-        else:
-            prompt = f'# Considering the following:\n\n{
-                base_code}\n\n# {goal}'
+                base_code}\n\n# {user_request}'
+            write_content_to_file(prompt, './prompts/gen/self_prompt.md')
+            code_self_messages = load_message_template(
+                sys_type='python', summary=self.summary)
+            code_self_messages.append({'role': 'user', 'content': prompt})
+            response = await self.send_and_store_message(code_self_messages)
 
-        write_content_to_file(prompt, './prompts/gen/self_prompt.md')
+        async def process_fix_request(self, user_input: str):
+            """Process a fix-related user request."""
+            base_code = "".join(code_corpus('./Bot'))
+            error_code = read_file_content(
+                os.path.join(gen_ai_path, ai_errors_path, error_file))
+            user_request = user_input.replace('fix ', '')
 
-        code_flex_messages = load_message_template(
-            sys_type='python', summary=self.summary)
-        code_flex_messages.append({'role': 'user', 'content': prompt})
-        response = await self.send_and_store_message(code_flex_messages)
+            # Prepare prompt with chat history
+            prompt = f"# Considering the following:\n\n{base_code}\n\n# What modifications need to be made in order to address the error:\n\n{error_code}"
+            write_content_to_file(prompt, './prompts/gen/fix_prompt.md')
+            fix_messages = load_message_template(
+                sys_type='python', summary=self.summary) + self.messages_context
+            fix_messages.append({'role': 'user', 'content': prompt})
 
-    async def process_self_request(self, user_input: str):
-        base_code = "".join(code_corpus('./Bot'))
-        user_request = user_input.replace('self ', '')
-        prompt = f'# Considering the following:\n\n{
-            base_code}\n\n# {user_request}'
-        write_content_to_file(prompt, './prompts/gen/self_prompt.md')
-        code_self_messages = load_message_template(
-            sys_type='python', summary=self.summary)
-        code_self_messages.append({'role': 'user', 'content': prompt})
-        response = await self.send_and_store_message(code_self_messages)
+            response = await self.send_and_store_message(fix_messages)
 
-    async def process_fix_request(self, user_input: str):
-        """Process a fix-related user request."""
-        base_code = "".join(code_corpus('./Bot'))
-        error_code = read_file_content(
-            os.path.join(gen_ai_path, ai_errors_path, error_file))
-        user_request = user_input.replace('fix ', '')
+        async def process_tool_request(self, user_input: str):
+            """Process a fix-related user request."""
+            
+            user_request = user_input.replace('tool ', '')
 
-        # Prepare prompt with chat history
-        prompt = f"# Considering the following:\n\n{base_code}\n\n# What modifications need to be made in order to address the error:\n\n{error_code}"
-        write_content_to_file(prompt, './prompts/gen/fix_prompt.md')
-        fix_messages = load_message_template(
-            sys_type='python', summary=self.summary) + self.messages_context
-        fix_messages.append({'role': 'user', 'content': prompt})
+            messages = load_message_template(
+                sys_type='tool', summary=self.summary) + self.messages_context
+            messages.append({'role': 'user', 'content': user_request})
 
-        response = await self.send_and_store_message(fix_messages)
+            # Call LLM to process the message
+            response = await process_user_messages_with_model(messages, tool_use=True, execute=True)
 
-    async def process_tool_request(self, user_input: str):
-        """Process a fix-related user request."""
-        
-        user_request = user_input.replace('tool ', '')
+            # Append to chat history
+            self.messages_context.append({'role': 'user', 'content': user_input})
+            self.messages_context.append(
+                {'role': 'assistant', 'content': response})
 
-        messages = load_message_template(
-            sys_type='tool', summary=self.summary) + self.messages_context
-        messages.append({'role': 'user', 'content': user_request})
-
-        # Call LLM to process the message
-        response = await process_user_messages_with_model(messages, tool_use=True, execute=True)
-
-        # Append to chat history
-        self.messages_context.append({'role': 'user', 'content': user_input})
-        self.messages_context.append(
-            {'role': 'assistant', 'content': response})
-
-        # print(response)
-        await self.trim_context()
+            # print(response)
+            await self.trim_context()
 
 
-    def set_config(self, key: str, value: str):
-        """Update configuration dynamically."""
-        section, option = key.split(".")
-        self.config.set(section, option, value)
-        with open("config.ini", "w") as configfile:
-            self.config.write(configfile)
-        print(f"Configuration updated: {key} = {value}")
+        def set_config(self, key: str, value: str):
+            """Update configuration dynamically."""
+            section, option = key.split(".")
+            self.config.set(section, option, value)
+            with open("config.ini", "w") as configfile:
+                self.config.write(configfile)
+            print(f"Configuration updated: {key} = {value}")
 
-    async def trim_context(self, max_length: int = 28):
-        """Trim the chat context to the last `max_length` interactions."""
+        async def trim_context(self, max_length: int = 28):
+            """Trim the chat context to the last `max_length` interactions."""
 
-        # Summarize if too long:
-        if len(self.messages_context) > max_length:  # your threshold
-            self.summary = get_message_context_summary(self.messages_context)
+            # Summarize if too long:
+            if len(self.messages_context) > max_length:  # your threshold
+                self.summary = get_message_context_summary(self.messages_context)
 
-            # Store embeddings:
-            # await store_message_in_vector_db('assistant', assistant_response)
-            self.messages_context = self.messages_context[-max_length:]
+                # Store embeddings:
+                # await store_message_in_vector_db('assistant', assistant_response)
+                self.messages_context = self.messages_context[-max_length:]
 
-    def handle_error(self, error: Exception, context: str = ""):
-        """Handle errors gracefully and log debug details."""
-        print(f"An error occurred: {error}")
-        if self.config.getboolean("Settings", "debug", fallback=False):
-            print(f"Context: {context}")
-            print(f"Details: {traceback.format_exc()}")
+        def handle_error(self, error: Exception, context: str = ""):
+            """Handle errors gracefully and log debug details."""
+            print(f"An error occurred: {error}")
+            if self.config.getboolean("Settings", "debug", fallback=False):
+                print(f"Context: {context}")
+                print(f"Details: {traceback.format_exc()}")
 
-    def list_sessions(self):
-        sessions = self.session_manager.list_sessions()
-        if sessions:
-            print("Available session files:")
-            for session in sessions:
-                print(f"- {session}")
-        else:
-            print("No session files found.")
+        def list_sessions(self):
+            sessions = self.session_manager.list_sessions()
+            if sessions:
+                print("Available session files:")
+                for session in sessions:
+                    print(f"- {session}")
+            else:
+                print("No session files found.")
 
-    def update_options(self, user_input: str):
-        user_input = user_input.replace('option ', '')
-        if user_input.startswith('timeout'):
-            self.timeout = int(user_input.replace('timeout ', ''))
-            print(f"Timeout set to {self.timeout}")
-        elif user_input.startswith('default'):
-            self.default_option = user_input.replace('default ', '')
-            print(f"Default option set to {self.default_option}")
+        def update_options(self, user_input: str):
+            user_input = user_input.replace('option ', '')
+            if user_input.startswith('timeout'):
+                self.timeout = int(user_input.replace('timeout ', ''))
+                print(f"Timeout set to {self.timeout}")
+            elif user_input.startswith('default'):
+                self.default_option = user_input.replace('default ', '')
+                print(f"Default option set to {self.default_option}")
 
-    def get_completer(self, document):
-        word = document.get_word_before_cursor()
-        if word.startswith('option'):
-            return CLICompleter.option_completer
-        elif word.startswith('tool'):
-            return CLICompleter.tool_completer
-        elif word.startswith('code'):
-            return CLICompleter.code_completer
-        elif word.startswith('combine'):
-            return CLICompleter.combine_completer
-        elif word.startswith('self'):
-            return CLICompleter.self_completer
-        elif word.startswith('fix'):
-            return CLICompleter.fix_completer
-        elif word.startswith('save_session'):
-            return CLICompleter.save_session_completer
-        elif word.startswith('load_session'):
-            return CLICompleter.load_session_completer
-        elif word.startswith('list_sessions'):
-            return CLICompleter.list_sessions_completer
-        elif word.startswith('exit'):
-            return CLICompleter.exit_completer
-        elif word.startswith('clear'):
-            return CLICompleter.clear_completer
-        else:
-            return CLICompleter.base_completer
+        def get_completer(self, document):
+            word = document.get_word_before_cursor()
+            if word.startswith('option'):
+                return CLICompleter.option_completer
+            elif word.startswith('tool'):
+                return CLICompleter.tool_completer
+            elif word.startswith('code'):
+                return CLICompleter.code_completer
+            elif word.startswith('combine'):
+                return CLICompleter.combine_completer
+            elif word.startswith('self'):
+                return CLICompleter.self_completer
+            elif word.startswith('fix'):
+                return CLICompleter.fix_completer
+            elif word.startswith('save_session'):
+                return CLICompleter.save_session_completer
+            elif word.startswith('load_session'):
+                return CLICompleter.load_session_completer
+            elif word.startswith('list_sessions'):
+                return CLICompleter.list_sessions_completer
+            elif word.startswith('exit'):
+                return CLICompleter.exit_completer
+            elif word.startswith('clear'):
+                return CLICompleter.clear_completer
+            else:
+                return CLICompleter.base_completer
 
-    async def background_task(self, interval):
-        try:
-            while not self.stop_event.is_set():
-                await asyncio.sleep(interval)
-                await self.do_self_improve('')
-                session_data = {
-                    "messages_template": self.messages_template,
-                    "messages_context": self.messages_context,
-                    "config": {
-                        "timeout": self.timeout,
-                        "default_option": self.default_option
+        async def background_task(self, interval):
+            try:
+                while not self.stop_event.is_set():
+                    await asyncio.sleep(interval)
+                    await self.do_self_improve('')
+                    session_data = {
+                        "messages_template": self.messages_template,
+                        "messages_context": self.messages_context,
+                        "config": {
+                            "timeout": self.timeout,
+                            "default_option": self.default_option
+                        }
                     }
-                }
-                self.session_manager.save_session(session_data)
-                print("Periodic session improvement completed.")
-        except asyncio.CancelledError:
-            pass
-        except Exception as e:
-            print(f"Background task error: {e}")
+                    self.session_manager.save_session(session_data)
+                    print("Periodic session improvement completed.")
+            except asyncio.CancelledError:
+                pass
+            except Exception as e:
+                print(f"Background task error: {e}")
 
 
-    async def background_sender(self, input_string):
-        # await asyncio.sleep(10)  # Wait 10 seconds before sending a message
-        await self.handle_command(input_string)
-        # Add more logic if you want to send multiple messages over time
+        async def background_sender(self, input_string):
+            # await asyncio.sleep(10)  # Wait 10 seconds before sending a message
+            await self.handle_command(input_string)
+            # Add more logic if you want to send multiple messages over time
 
 
 async def main():
