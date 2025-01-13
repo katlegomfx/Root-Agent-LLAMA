@@ -50,8 +50,16 @@ def load_message_template(sys_type: str = 'base', summary:str = '') -> List[Dict
         ]
     
     elif sys_type == "tool":
-        hard_coded = f"{md_heading} You specalise in tool use requiring json output to execute.\n{
-            md_heading} You are able to help the user with anything.\n{md_heading} You will use the avaliable tools"
+        hard_coded = f"""{md_heading} You are Flexi, an advanced AI agent capable of reflection and tool usage.
+{md_heading} You must handle user requests by reasoning step by step:
+{md_heading} 1) Understand the user request.
+{md_heading} 2) If a tool is needed, produce a JSON instruction for that tool (in triple backticks).
+{md_heading} 3) If the tool fails, reflect on the error message, correct the tool parameters, and try again.
+{md_heading} 4) Provide the final result or an explanation to the user.
+{md_heading} You maintain memory of the conversation and can self-critique or revise your approach if needed.
+{md_heading} You specalise in tool use requiring json output to execute.
+{md_heading} You are able to help the user with anything.
+{md_heading} You will use the avaliable tools"""
         hard_coded += f"""
 {md_heading} Avaliable Tool:
 {md_heading}{md_heading} Name:
@@ -74,7 +82,6 @@ def load_message_template(sys_type: str = 'base', summary:str = '') -> List[Dict
         parameters: <[values]>
     }}
     {triple_backticks}
--
 """
         base_tool_messages = [
             {"role": 'system', "content": hard_coded}
@@ -112,10 +119,12 @@ def load_message_template(sys_type: str = 'base', summary:str = '') -> List[Dict
         ]
 
     elif  summary != '':
-        message.append({
+        message = [{
             'role': 'system',
-            'content': f"{message[0]['content']}\n{md_heading}{md_heading} Content:{summary}"
-        })
+            'content': f"{message[0]['content']}\n{md_heading}{md_heading}"
+        }]
+
+    message = add_context_to_messages(message, summary)
     
     return message
 
@@ -185,8 +194,6 @@ def extract_ordered_list_with_details(text, typer="Step"):
         items[f"{typer} {counter - 1}"] = current_item
 
     return items
-
-
 
 
 
@@ -315,7 +322,9 @@ async def get_message_context_summary(messages_context):
 
     summary_result = await process_user_messages_with_model(summary_prompt_messages)
     timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-    with open(os.path.join(gen_ai_path, ai_summaries_path, f'{summary_prefix}_{timestamp}.txt'), 'w') as f:
+    summary_filename = os.path.join(gen_ai_path, ai_summaries_path, f'{
+                                    summary_prefix}_{timestamp}.md')
+    with open(summary_filename, 'w') as f:
         f.write(summary_result)
 
     return summary_result
@@ -340,11 +349,11 @@ def get_py_files_recursive(directory, exclude_dirs=None, exclude_files=None):
 
     # Note: This line was causing an error because dir[:] = ... does not modify the original dir variable
     # We need to use a new list instead
-    dirs = [d for d in os.listdir(directory) if d not in exclude_dirs]
+    
 
     py_files = []
     for root, dirs, files in os.walk(directory):
-        new_dirs = [os.path.join(root, d) for d in dirs]
+        dirs[:] = [d for d in dirs if d not in exclude_dirs]
         for file in files:
             if file.endswith('.py') and file not in exclude_files:
                 py_files.append(os.path.join(root, file))
@@ -403,24 +412,12 @@ def read_file_content(path: str) -> str:
 
 
 def add_context_to_messages(messages, context):
-    # # do we need context from summary
-    # # summary_messages = load_message_template()
-    # if context == 'name_project':
-    #     # system message + # Respond with python script to print out the project name.
-
-    # # find system messages
-    # content = [d['content']
-    #            for d in messages if d['role'] == 'system'][0]
-    # messages
-
-    # # modify system messages
-    # get_summary_on_files()
-
-    # # save changes
-    pass
-
-
-
+    for m in messages:
+        if m['role'] == 'system':
+            content = f"{m['content']}\n\n## Summary History\n\n{context}"
+            messages = [{'role': 'system', 'content': content}]
+    return messages
+    
 
 async def embedText(writtenText, model='nomic-embed-text'):
     

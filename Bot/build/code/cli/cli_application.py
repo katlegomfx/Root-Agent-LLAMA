@@ -1,15 +1,14 @@
 import asyncio
-import os
-import json
+
 import traceback
 import speech_recognition as sr
 import pyttsx3
 import asyncio
-
+import signal
+from contextlib import suppress
 
 from typing import List, Dict, Any
 
-from contextlib import suppress
 from threading import Event
 
 from prompt_toolkit import PromptSession
@@ -17,21 +16,24 @@ from prompt_toolkit.styles import Style
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.patch_stdout import patch_stdout
 
-from Bot.build.code.io_utils import write_content_to_file
-import Bot.build.code.session.config
+from Bot.build.code.session.config import ensure_build_directories
 from Bot.build.code.session.constants import (
     config, ai_errors_path, error_file, gen_ai_path)
 from Bot.build.code.llm.prompts import load_message_template, process_user_messages_with_model, code_corpus, add_context_to_messages, read_file_content, get_message_context_summary
 from Bot.build.code.cli.cli_helpers import FilePathCompleter, CLICompleter
 from Bot.build.code.session.session_management import SessionManager
-from Bot.build.code.tasks.coder import find_functions_without_docstrings
-from Bot.build.code.tasks.improver import analyze, improve, refine
+
+from Bot.build.code.cli.user_requests import UserRequests
+from Bot.build.code.cli.cli_requests import CLIRequests
+from Bot.build.code.cli.ai_requests import AIRequests
 
 
 from Bot.build.code.utils.text_utils import strip_code_blocks
 
+ensure_build_directories()
 
-class CLIApplication:
+
+class CLIApplication(UserRequests, AIRequests, CLIRequests):
     def __init__(self):
         self.use_chat_history = True
         self.commands = [
@@ -87,65 +89,61 @@ class CLIApplication:
 
         self.voice_listener_task = None
 
-    async def speak(self, text: str):
-        """Use TTS to speak the given text, excluding code blocks."""
-        try:
-            # Strip code blocks from the text
-            clean_text = strip_code_blocks(text)
-            if not clean_text.strip():
-                return  # Avoid speaking if there's no meaningful text
+    # async def speak(self, text: str):
+    #     """Use TTS to speak the given text, excluding code blocks."""
+    #     try:
+    #         # Strip code blocks from the text
+    #         clean_text = strip_code_blocks(text)
+    #         if not clean_text.strip():
+    #             return  # Avoid speaking if there's no meaningful text
 
-            # Optionally, split text into manageable chunks to avoid overwhelming the TTS engine
-            max_chunk_size = 500  # Adjust based on TTS capabilities
-            chunks = [clean_text[i:i+max_chunk_size]
-                    for i in range(0, len(clean_text), max_chunk_size)]
+    #         # Optionally, split text into manageable chunks to avoid overwhelming the TTS engine
+    #         max_chunk_size = 500  # Adjust based on TTS capabilities
+    #         chunks = [clean_text[i:i+max_chunk_size]
+    #                 for i in range(0, len(clean_text), max_chunk_size)]
 
-            loop = asyncio.get_event_loop()
-            for chunk in chunks:
-                if chunk.strip():
-                    await loop.run_in_executor(None, self.tts_engine.say, chunk)
-                    await loop.run_in_executor(None, self.tts_engine.runAndWait)
-        except Exception as e:
-            print(f"Error in TTS: {e}")
+    #         loop = asyncio.get_event_loop()
+    #         for chunk in chunks:
+    #             if chunk.strip():
+    #                 await loop.run_in_executor(None, self.tts_engine.say, chunk)
+    #                 await loop.run_in_executor(None, self.tts_engine.runAndWait)
+    #     except Exception as e:
+    #         print(f"Error in TTS: {e}")
 
-
-
-    async def listen(self) -> str:
-        """Listen to the microphone and return the recognized text."""
-        with self.microphone as source:
-            self.recognizer.adjust_for_ambient_noise(source)
-            try:
-                audio = await asyncio.get_event_loop().run_in_executor(None, self.recognizer.listen, source)
-                text = self.recognizer.recognize_google(audio)
-                return text.lower()
-            except sr.UnknownValueError:
-                await self.speak("Sorry, I did not understand that.")
-                return ""
-            except sr.RequestError:
-                await self.speak("Sorry, I'm unable to reach the speech recognition service.")
-                return ""
+    # async def listen(self) -> str:
+    #     """Listen to the microphone and return the recognized text."""
+    #     with self.microphone as source:
+    #         self.recognizer.adjust_for_ambient_noise(source)
+    #         try:
+    #             audio = await asyncio.get_event_loop().run_in_executor(None, self.recognizer.listen, source)
+    #             text = self.recognizer.recognize_google(audio)
+    #             return text.lower()
+    #         except sr.UnknownValueError:
+    #             await self.speak("Sorry, I did not understand that.")
+    #             return ""
+    #         except sr.RequestError:
+    #             await self.speak("Sorry, I'm unable to reach the speech recognition service.")
+    #             return ""
             
-    # Inside the CLIApplication class
+    # async def voice_command_listener(self):
+    #     """Continuously listen for voice commands."""
+    #     await self.speak("Voice command listener activated. Say 'hey flexi' to start.")
+    #     while not self.stop_event.is_set():
+    #         command = await self.listen()
+    #         if "hey flexi" in command:
+    #             await self.speak("Listening for your command.")
+    #             user_command = await self.listen()
+    #             if user_command:
+    #                 if "stop" in user_command:
+    #                     await self.speak("Voice command listener deactivated.")
+    #                     self.stop_event.set()
+    #                     break
+    #                 else:
+    #                     await self.handle_command(user_command)
+    #     # Reset the stop_event for future use
+    #     self.stop_event.clear()
 
-    async def voice_command_listener(self):
-        """Continuously listen for voice commands."""
-        await self.speak("Voice command listener activated. Say 'hey flexi' to start.")
-        while not self.stop_event.is_set():
-            command = await self.listen()
-            if "hey flexi" in command:
-                await self.speak("Listening for your command.")
-                user_command = await self.listen()
-                if user_command:
-                    if "stop" in user_command:
-                        await self.speak("Voice command listener deactivated.")
-                        self.stop_event.set()
-                        break
-                    else:
-                        await self.handle_command(user_command)
-        # Reset the stop_event for future use
-        self.stop_event.clear()
-
-    async def send_and_store_message(self, messages: List[Dict[str, str]], speak_back: bool = True) -> str:
+    async def send_and_store_message(self, messages: List[Dict[str, str]], speak_back: bool = False) -> str:
         """
         Sends messages to the LLM, stores the conversation in messages_context,
         and returns the assistant's response.
@@ -163,14 +161,13 @@ class CLIApplication:
             self.messages_context.append(
                 {'role': 'assistant', 'content': response})
             # Conditionally speak the assistant's response
-            if speak_back:
-                await self.speak(response)
+            # if speak_back:
+            #     await self.speak(response)
             await self.trim_context()
             return response
         except Exception as e:
             self.handle_error(e, context="LLM Interaction")
             return ""
-
 
     async def handle_command(self, user_input: str, speak_back: bool = True):
         """Handle user commands."""
@@ -179,35 +176,24 @@ class CLIApplication:
                 self.messages_context.clear()
                 print("Cleared previous inputs.")
 
-            elif user_input.startswith("flexFile"):
-                await self.process_flex_request(user_input)
-
-            elif user_input.startswith("auto_improve"):
-                await self.do_auto_improve(user_input.replace("auto_improve", "").strip())
-
-            elif user_input.startswith("start voice"):
-                if self.voice_listener_task is None or self.voice_listener_task.done():
-                    self.voice_listener_task = asyncio.create_task(
-                        self.voice_command_listener())
-                    await self.speak("Voice command listener started.")
-                else:
-                    await self.speak("Voice command listener is already running.")
-
-            elif user_input.startswith("stop voice"):
-                if self.voice_listener_task and not self.voice_listener_task.done():
-                    self.stop_event.set()
-                    await self.voice_listener_task
-                    self.voice_listener_task = None
-                    await self.speak("Voice command listener deactivated.")
-                else:
-                    await self.speak("Voice command listener is not running.")
-
-            elif user_input.startswith("summarize"):
-                await self.do_summarize(user_input)
-
-            elif user_input.startswith("check_docstrings"):
-                # e.g. "check_docstrings ./myfolder"
-                await self.do_check_docstrings(user_input.replace("check_docstrings", "").strip())
+            # elif user_input.startswith("start voice"):
+            #     if self.voice_listener_task is None or self.voice_listener_task.done():
+            #         self.voice_listener_task = asyncio.create_task(
+            #             self.voice_command_listener())
+            #         await self.speak("Voice command listener started.")
+            #     else:
+            #         await self.speak("Voice command listener is already running.")
+            # elif user_input.startswith("stop voice"):
+            #     if self.voice_listener_task and not self.voice_listener_task.done():
+            #         self.stop_event.set()
+            #         await self.voice_listener_task
+            #         self.voice_listener_task = None
+            #         await self.speak("Voice command listener deactivated.")
+            #     else:
+            #         await self.speak("Voice command listener is not running.")
+            
+            elif user_input.startswith("flex"):
+               await self.process_flex_request(user_input)
 
             elif user_input.startswith("code"):
                 await self.process_code_request(user_input)
@@ -223,6 +209,16 @@ class CLIApplication:
 
             elif user_input.startswith("fix"):
                 await self.process_fix_request(user_input)
+            
+            elif user_input.startswith("summarize"):
+                await self.do_summarize(user_input)
+
+            elif user_input.startswith("auto_improve"):
+                await self.do_auto_improve(user_input.replace("auto_improve", "").strip())
+
+            elif user_input.startswith("check_docstrings"):
+                # e.g. "check_docstrings ./myfolder"
+                await self.do_check_docstrings(user_input.replace("check_docstrings", "").strip())
 
             elif user_input.startswith("save_session"):
                 self.save_session()
@@ -236,101 +232,99 @@ class CLIApplication:
             elif user_input.startswith("option"):
                 self.update_options(user_input)
 
-            elif user_input.startswith("help"):
-                self.display_help()
-
             elif user_input.startswith("show_history"):
                 await self.show_chat_history()
 
+            elif user_input.startswith("help"):
+                self.display_help()
+
             else:
-                await self.process_generic_request(user_input, speak_back=speak_back)
+                await self.process_generic_request(user_input)
 
         except Exception as e:
             self.handle_error(e, context="Command Handling")
 
-    def save_session(self):
-        """Save the current session, including chat history."""
-        session_data = {
-            "messages_template": self.messages_template,
-            "messages_context": self.messages_context,  # Store full chat history
-            "config": {
-                "timeout": self.timeout,
-                "default_option": self.default_option
-            }
-        }
-        self.session_manager.save_session(session_data)
 
+    def set_config(self, key: str, value: str):
+        """Update configuration dynamically."""
+        section, option = key.split(".")
+        self.config.set(section, option, value)
+        with open("config.ini", "w") as configfile:
+            self.config.write(configfile)
+        print(f"Configuration updated: {key} = {value}")
 
-    def load_session(self):
-        """Load a saved session, including chat history."""
-        session_data = self.session_manager.load_session()
-        if session_data:
-            self.messages_template = session_data.get("messages_template", [])
-            self.messages_context = session_data.get(
-                "messages_context", [])  # Restore chat history
-            config_data = session_data.get("config", {})
-            self.timeout = config_data.get("timeout", self.timeout)
-            self.default_option = config_data.get(
-                "default_option", self.default_option)
+    async def trim_context(self, max_length: int = 28):
+        """Trim the chat context to the last `max_length` interactions."""
 
+        # Summarize if too long:
+        if len(self.messages_context) > max_length:  # your threshold
+            self.summary = get_message_context_summary(
+                self.messages_context)
 
-    async def show_chat_history(self, page: int = 1, page_size: int = 10):
-        """Displays the chat history to the user with pagination."""
-        if not self.messages_context:
-            print("No chat history available.")
-            return
+            # Store embeddings:
+            # await store_message_in_vector_db('assistant', assistant_response)
+            self.messages_context = self.messages_context[-max_length:]
+        
+        
 
-        total_messages = len(self.messages_context)
-        total_pages = (total_messages + page_size - 1) // page_size
+    def handle_error(self, error: Exception, context: str = ""):
+        """Handle errors gracefully and log debug details."""
+        print(f"An error occurred: {error}")
+        if self.config.getboolean("Settings", "debug", fallback=False):
+            print(f"Context: {context}")
+            print(f"Details: {traceback.format_exc()}")
 
-        if page < 1 or page > total_pages:
-            print(f"Invalid page number. Please enter a number between 1 and {
-                total_pages}.")
-            return
+    def get_completer(self, document):
+        word = document.get_word_before_cursor()
+        if word.startswith('option'):
+            return CLICompleter.option_completer
+        elif word.startswith('tool'):
+            return CLICompleter.tool_completer
+        elif word.startswith('code'):
+            return CLICompleter.code_completer
+        elif word.startswith('combine'):
+            return CLICompleter.combine_completer
+        elif word.startswith('self'):
+            return CLICompleter.self_completer
+        elif word.startswith('fix'):
+            return CLICompleter.fix_completer
+        elif word.startswith('save_session'):
+            return CLICompleter.save_session_completer
+        elif word.startswith('load_session'):
+            return CLICompleter.load_session_completer
+        elif word.startswith('list_sessions'):
+            return CLICompleter.list_sessions_completer
+        elif word.startswith('exit'):
+            return CLICompleter.exit_completer
+        elif word.startswith('clear'):
+            return CLICompleter.clear_completer
+        else:
+            return CLICompleter.base_completer
 
-        start_idx = (page - 1) * page_size
-        end_idx = min(start_idx + page_size, total_messages)
+    async def background_task(self, interval):
+        try:
+            while not self.stop_event.is_set():
+                await asyncio.sleep(interval)
+                await self.do_self_improve('')
+                session_data = {
+                    "messages_template": self.messages_template,
+                    "messages_context": self.messages_context,
+                    "config": {
+                        "timeout": self.timeout,
+                        "default_option": self.default_option
+                    }
+                }
+                self.session_manager.save_session(session_data)
+                print("Periodic session improvement completed.")
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            print(f"Background task error: {e}")
 
-        print(f"\n--- Chat History (Page {page} of {total_pages}) ---\n")
-        for idx, message in enumerate(self.messages_context[start_idx:end_idx], start=start_idx + 1):
-            role = message.get('role', 'Unknown').capitalize()
-            content = message.get('content', '')
-            print(f"{idx}. {role}: {content}\n")
-        print("--- End of Chat History ---\n")
-
-        if page < total_pages:
-            proceed = input(
-                "Do you want to see the next page? (y/n): ").strip().lower()
-            if proceed == 'y':
-                await self.show_chat_history(page=page + 1, page_size=page_size)
-
-
-    def display_help(self):
-        print("""
-        Welcome to CLIApplication!
-        Available commands:
-        - code: Process a code request.
-        - fix: Suggest fixes for errors.
-        - combine: Combine multiple files.
-        - self: self multiple files.
-        - check_docstrings: check_docstrings multiple files.
-        - auto_improve: auto_improve multiple files.
-        - summarize: summarize multiple files.
-        - show_history: Display the chat history.
-        - start voice: Activate voice command listener.
-        - stop voice: Deactivate voice command listener.
-            
-        - save_session: Save the current session.
-        - load_session: Load a previous session.
-        - list_sessions: List available sessions.
-            
-        - option: Update application options dynamically.
-            
-        - clear: Clear the current session context.
-        - help: Display this help menu.
-        - exit: Exit the application.
-        """)
-
+    async def background_sender(self, input_string):
+        # await asyncio.sleep(10)  # Wait 10 seconds before sending a message
+        await self.handle_command(input_string)
+        # Add more logic if you want to send multiple messages over time
 
     async def run(self) -> None:
         # Start the voice command listener if needed
@@ -362,333 +356,66 @@ class CLIApplication:
             await self.handle_command(user_input, speak_back=False)
 
         # After exiting the loop
-        await self.speak("Application is shutting down.")
-
-        async def process_generic_request(self, user_input: str):
-            """Process generic user input."""
-            # Prepend session chat history to the current messages
-
-
-            messages = load_message_template(
-                sys_type='base', summary=self.summary) + self.messages_context
-            messages.append({'role': 'user', 'content': user_input})
-
-            response = await self.send_and_store_message(messages)
-
-
-        async def process_code_request(self, user_input: str):
-            """Process a code-related user request."""
-            base_code = read_file_content('main.py')
-            user_request = user_input.replace('code ', '')
-
-            # Prepare prompt with chat history
-            prompt = f"# Considering the following:\n\n{base_code}\n\n# {user_request}"
-            write_content_to_file(prompt, './prompts/gen/code_prompt.md')
-            code_messages = load_message_template(
-                sys_type='python', summary=self.summary) + self.messages_context
-            code_messages.append({'role': 'user', 'content': prompt})
-
-            response = await self.send_and_store_message(code_messages)
-
-
-        async def process_combine_request(self, user_input: str):
-            base_code = "".join(code_corpus('./Bot'))
-            user_request = f'\n\n# Focus on the following:\n{user_input.replace(
-                "combine ", "")}' if user_input.replace('combine ', '').strip() != '' else ''
-            additional_dir = "".join(code_corpus('./idea'))
-            prompt = f'# Considering the following:\n\n{
-                base_code}\n\n# Incorporate the following:\n\n{additional_dir}{user_request}'
-
-            write_content_to_file(prompt, './prompts/gen/combine_prompt.md')
-
-            code_combine_messages = load_message_template(
-                sys_type='python', summary=self.summary)
-            # Ensure prompt is appended
-            code_combine_messages.append({'role': 'user', 'content': prompt})
-
-            response = await self.send_and_store_message(code_combine_messages)
-
-
-
-        async def do_auto_improve(self, arg):
-            """
-            Automatically improves the initial state by creating a plan, executing steps,        
-            and checking for completion.
-
-            Args:
-                initial_state (dict): The initial state to be improved.
-
-            Returns:
-                dict: The final improved state.
-            """
-            # Load self_improvement_state.json if it exists
-            path = 'self_improvement_state.json'
-            if os.path.exists(path):
-                with open(path, 'r') as f:
-                    data = json.load(f)
-                # Possibly feed that into a prompt
-                prompt = f"Given the self-improvement plan: {data}..."
-                # Initialize an empty dictionary to store improvements
-                improvements = data
-            else:
-                prompt = "No existing plan. Start from scratch..."
-                improvements = {}
-
-            # Define the possible steps to be taken in each iteration
-            steps = [
-                {
-                    "step": "Analyze",
-                    "action": analyze,
-                    "params": {"state": self.initial_state}
-                },
-                {
-                    "step": "Improve",
-                    "action": improve,
-                    "params": {"state": self.initial_state}
-                },
-                {
-                    "step": "Refine",
-                    "action": refine,
-                    "params": {"state": self.initial_state}
-                }
-            ]
-
-            # Initialize the current state
-            current_state = self.initial_state
-
-            # Loop until all steps are completed
-            while len(steps) > 0:
-                # Select the next step to be executed
-                next_step = steps.pop(0)
-
-                # Check if the step is already in progress
-                if "in_progress" in current_state and current_state["in_progress"] == next_step["step"]:
-                    print(f"Skipping {next_step['step']}, it's already in progress.")
-                    continue
-
-                messages = load_message_template(sys_type='base')
-                messages.append({'role': 'user', 'content': prompt})
-                # Execute the selected step
-                result = await process_user_messages_with_model(messages, tool_use=True, execute=True)
-
-                # Check for completion
-                if "completed" in current_state:
-                    if not current_state["completed"] and next_step["action"] == refine:
-                        print(
-                            f"{next_step['step']} was not completed, skipping to the next iteration.")
-                        continue
-
-                # Update the current state with the result of the step execution
-                improvements[next_step["step"]] = {"result": result}
-
-                # Update the in_progress flag if the step is completed
-                if "completed" not in current_state and result:
-                    current_state["in_progress"] = next_step["step"]
-                    print(f"{next_step['step']} was completed.")
-
-            return improvements
-
-
-        async def do_summarize(self, arg):
-            """Summarize the chat or code context."""
-            if not self.messages_context:
-                print("No context to summarize.")
-                return
-            summary_result = await get_message_context_summary(self.messages_context)
-            print("Summary:", summary_result)
-
-        def do_check_docstrings(self, arg):
-            """check_docstrings <file_or_directory> - Find functions/classes without docstrings."""
-            path = arg.strip() or '.'
-            results = find_functions_without_docstrings(path)
-            if not results:
-                print("No missing docstrings found.")
-            else:
-                for item in results:
-                    print(f"Missing docstring: {item}")
-
-        async def process_flex_request(self, user_input: str):
-            base_code = "".join(code_corpus('./Bot'))
-
-            goal = f"Incorporate the following:\n\n## main.py:\n{
-                read_file_content('main.py')}\n"
-            user_request = user_input.replace('flex ', '')
-
-            if len(user_request) >= 3:
-                final_request = f"\n\n# {user_request}"
-                prompt = f'# Considering the following:\n\n{
-                    base_code}\n\n# {goal}{final_request}'
-            else:
-                prompt = f'# Considering the following:\n\n{
-                    base_code}\n\n# {goal}'
-
-            write_content_to_file(prompt, './prompts/gen/self_prompt.md')
-
-            code_flex_messages = load_message_template(
-                sys_type='python', summary=self.summary)
-            code_flex_messages.append({'role': 'user', 'content': prompt})
-            response = await self.send_and_store_message(code_flex_messages)
-
-        async def process_self_request(self, user_input: str):
-            base_code = "".join(code_corpus('./Bot'))
-            user_request = user_input.replace('self ', '')
-            prompt = f'# Considering the following:\n\n{
-                base_code}\n\n# {user_request}'
-            write_content_to_file(prompt, './prompts/gen/self_prompt.md')
-            code_self_messages = load_message_template(
-                sys_type='python', summary=self.summary)
-            code_self_messages.append({'role': 'user', 'content': prompt})
-            response = await self.send_and_store_message(code_self_messages)
-
-        async def process_fix_request(self, user_input: str):
-            """Process a fix-related user request."""
-            base_code = "".join(code_corpus('./Bot'))
-            error_code = read_file_content(
-                os.path.join(gen_ai_path, ai_errors_path, error_file))
-            user_request = user_input.replace('fix ', '')
-
-            # Prepare prompt with chat history
-            prompt = f"# Considering the following:\n\n{base_code}\n\n# What modifications need to be made in order to address the error:\n\n{error_code}"
-            write_content_to_file(prompt, './prompts/gen/fix_prompt.md')
-            fix_messages = load_message_template(
-                sys_type='python', summary=self.summary) + self.messages_context
-            fix_messages.append({'role': 'user', 'content': prompt})
-
-            response = await self.send_and_store_message(fix_messages)
-
-        async def process_tool_request(self, user_input: str):
-            """Process a fix-related user request."""
-            
-            user_request = user_input.replace('tool ', '')
-
-            messages = load_message_template(
-                sys_type='tool', summary=self.summary) + self.messages_context
-            messages.append({'role': 'user', 'content': user_request})
-
-            # Call LLM to process the message
-            response = await process_user_messages_with_model(messages, tool_use=True, execute=True)
-
-            # Append to chat history
-            self.messages_context.append({'role': 'user', 'content': user_input})
-            self.messages_context.append(
-                {'role': 'assistant', 'content': response})
-
-            # print(response)
-            await self.trim_context()
-
-
-        def set_config(self, key: str, value: str):
-            """Update configuration dynamically."""
-            section, option = key.split(".")
-            self.config.set(section, option, value)
-            with open("config.ini", "w") as configfile:
-                self.config.write(configfile)
-            print(f"Configuration updated: {key} = {value}")
-
-        async def trim_context(self, max_length: int = 28):
-            """Trim the chat context to the last `max_length` interactions."""
-
-            # Summarize if too long:
-            if len(self.messages_context) > max_length:  # your threshold
-                self.summary = get_message_context_summary(self.messages_context)
-
-                # Store embeddings:
-                # await store_message_in_vector_db('assistant', assistant_response)
-                self.messages_context = self.messages_context[-max_length:]
-
-        def handle_error(self, error: Exception, context: str = ""):
-            """Handle errors gracefully and log debug details."""
-            print(f"An error occurred: {error}")
-            if self.config.getboolean("Settings", "debug", fallback=False):
-                print(f"Context: {context}")
-                print(f"Details: {traceback.format_exc()}")
-
-        def list_sessions(self):
-            sessions = self.session_manager.list_sessions()
-            if sessions:
-                print("Available session files:")
-                for session in sessions:
-                    print(f"- {session}")
-            else:
-                print("No session files found.")
-
-        def update_options(self, user_input: str):
-            user_input = user_input.replace('option ', '')
-            if user_input.startswith('timeout'):
-                self.timeout = int(user_input.replace('timeout ', ''))
-                print(f"Timeout set to {self.timeout}")
-            elif user_input.startswith('default'):
-                self.default_option = user_input.replace('default ', '')
-                print(f"Default option set to {self.default_option}")
-
-        def get_completer(self, document):
-            word = document.get_word_before_cursor()
-            if word.startswith('option'):
-                return CLICompleter.option_completer
-            elif word.startswith('tool'):
-                return CLICompleter.tool_completer
-            elif word.startswith('code'):
-                return CLICompleter.code_completer
-            elif word.startswith('combine'):
-                return CLICompleter.combine_completer
-            elif word.startswith('self'):
-                return CLICompleter.self_completer
-            elif word.startswith('fix'):
-                return CLICompleter.fix_completer
-            elif word.startswith('save_session'):
-                return CLICompleter.save_session_completer
-            elif word.startswith('load_session'):
-                return CLICompleter.load_session_completer
-            elif word.startswith('list_sessions'):
-                return CLICompleter.list_sessions_completer
-            elif word.startswith('exit'):
-                return CLICompleter.exit_completer
-            elif word.startswith('clear'):
-                return CLICompleter.clear_completer
-            else:
-                return CLICompleter.base_completer
-
-        async def background_task(self, interval):
-            try:
-                while not self.stop_event.is_set():
-                    await asyncio.sleep(interval)
-                    await self.do_self_improve('')
-                    session_data = {
-                        "messages_template": self.messages_template,
-                        "messages_context": self.messages_context,
-                        "config": {
-                            "timeout": self.timeout,
-                            "default_option": self.default_option
-                        }
-                    }
-                    self.session_manager.save_session(session_data)
-                    print("Periodic session improvement completed.")
-            except asyncio.CancelledError:
-                pass
-            except Exception as e:
-                print(f"Background task error: {e}")
-
-
-        async def background_sender(self, input_string):
-            # await asyncio.sleep(10)  # Wait 10 seconds before sending a message
-            await self.handle_command(input_string)
-            # Add more logic if you want to send multiple messages over time
+        # await self.speak("Application is shutting down.")
 
 
 async def main():
     cli_app = CLIApplication()
 
+    # Create a shutdown event
+    shutdown_event = asyncio.Event()
+
+    # Define signal handler
+    def handle_sigint():
+        print("\nReceived exit signal. Shutting down...")
+        shutdown_event.set()
+
+    # Register signal handlers
+    loop = asyncio.get_running_loop()
+    loop.add_signal_handler(signal.SIGINT, handle_sigint)
+    loop.add_signal_handler(signal.SIGTERM, handle_sigint)  # Optional
+
+    # Start background tasks
     background = asyncio.create_task(
         cli_app.background_task(cli_app.background_interval)
     )
+
+    if cli_app.voice_listener_task:
+        voice_listener = asyncio.create_task(cli_app.voice_listener_task)
+    else:
+        voice_listener = None
+
     try:
-        await cli_app.run()
+        # Run the main CLI loop until shutdown_event is set
+        await asyncio.wait(
+            [cli_app.run(), shutdown_event.wait()],
+            return_when=asyncio.FIRST_COMPLETED
+        )
     finally:
+        # Initiate shutdown
         cli_app.stop_event.set()
-        background.cancel()
+
+        # Cancel background tasks
+        tasks_to_cancel = [background]
+        if voice_listener:
+            tasks_to_cancel.append(voice_listener)
+
+        for task in tasks_to_cancel:
+            task.cancel()
+
+        # Wait for tasks to cancel gracefully
         with suppress(asyncio.CancelledError):
-            await background
+            await asyncio.gather(*tasks_to_cancel, return_exceptions=True)
+
+        # Save the session if needed
+        cli_app.save_session()
+
+        # Speak shutdown message
+        # await cli_app.speak("Application is shutting down.")
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\nApplication terminated by user.")

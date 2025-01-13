@@ -8,6 +8,8 @@ gen_ai_summaries
 gen_ai_history
 pyds
 base.py
+./*_gen_ai
+12_01_25_gen_ai
 
 idea/
 prompts

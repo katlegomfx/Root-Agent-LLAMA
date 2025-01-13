@@ -166,6 +166,10 @@ async def process_user_messages_with_model(messages: List[Dict[str, str]], tool_
             for code in js_codes:
                 number_of_files = get_next_filename_index(
                     os.path.join(ai_code_path, 'nextjs'), ".js")
+            javascript_codes = extract_code(assistant_response, 'javascript')
+            for code in javascript_codes:
+                number_of_files = get_next_filename_index(
+                    os.path.join(ai_code_path, 'nextjs'), ".js")
 
         request_info = {
             'input': {
