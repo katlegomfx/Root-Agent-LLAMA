@@ -5,7 +5,6 @@ from typing import Optional
 from Bot.build.code.tasks.improver import analyze, improve, refine
 from .state import SelfImprovementState, Step
 
-
 class SessionManager:
     def __init__(self, session_file: str = 'session.json'):
         self.session_file = session_file
@@ -15,8 +14,6 @@ class SessionManager:
                 "Restore the last session? (y/n): ").strip().lower()
             if restore == 'y':
                 self.load_session()
-
-
 
     def save_session(self):
         """Save session data to a JSON file."""
@@ -30,14 +27,12 @@ class SessionManager:
         except Exception as e:
             print(f"Error saving session: {e}")
 
-
     def load_session(self):
         """Load session data from a JSON file."""
         try:
             with open(self.session_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-            # Reconstruct SelfImprovementState
-            steps = [Step(**step) for step in data.get('steps', [])]
+            ### Reconstruct SelfImprovementState            steps = [Step(**step) for step in data.get('steps', [])]
             self.state = SelfImprovementState(
                 steps=steps,
                 improvements=data.get('improvements', {}),

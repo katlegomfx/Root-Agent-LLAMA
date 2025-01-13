@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Any, List, Dict, Optional
 
-
 @dataclass
 class Step:
     name: str
@@ -11,7 +10,6 @@ class Step:
     retries: int = 0
     max_retries: int = 3
     result: Optional[Any] = None
-
 
 @dataclass
 class SelfImprovementState:

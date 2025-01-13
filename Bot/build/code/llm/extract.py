@@ -3,7 +3,6 @@ import re
 from Bot.build.code.session.constants import triple_backticks
 from typing import List, Dict, Any
 
-
 def extract_code(text: str, language: str = 'python') -> list[str]:
     """
     Extracts code blocks of the specified programming language from the given text.

@@ -31,7 +31,6 @@ def load_project_data(path="task.json"):
         print(f"Error decoding JSON: {e}")
         return {}
 
-
 def save_project_data(data, path="task.json"):
     """Save data to a JSON file with error handling."""
     print(f"Attempting to save data to {path}")
@@ -42,7 +41,6 @@ def save_project_data(data, path="task.json"):
     except IOError as e:
         print(f"Failed to write to file: {path}, Error: {e}")
         raise
-
 
 async def name_project(user_input, retries=0):
 
@@ -61,12 +59,10 @@ Name the project.
     codes = extract_code(result)
     number_of_files = get_next_filename_index(ai_code_path, code_prefix)
     for code in codes:
-        # try to execute the python code if not retry
-        code_exec = exec(code)
+        ### try to execute the python code if not retry        code_exec = exec(code)
         if code_exec != "":
 
-            # if execution worked
-            write_content_to_file(code, os.path.join(
+            ### if execution worked            write_content_to_file(code, os.path.join(
                 ai_code_path, f'{code_prefix}{number_of_files}.py'))
             projects = load_project_data()
             task_name = code_exec
@@ -77,10 +73,7 @@ Name the project.
             if retries < (10/2):
                 return name_project(user_input, retries=retries+1)
             else:
-                # input(colored('\nPlease try again?', 'red', attrs=[
-                # "bold", "underline", "blink"]))
-                return name_project(user_input, retries=retries+1)
-
+                ### input(colored('\nPlease try again?', 'red', attrs=[                ### "bold", "underline", "blink"]))                return name_project(user_input, retries=retries+1)
 
 async def create_project_steps(project_name, project_goal, retries=0):
     projects = load_project_data()
@@ -123,10 +116,7 @@ Is the above list of steps sufficent?
         if retries < (10/2):
             return create_project_steps(project_name, project_goal, retries=retries+1)
         else:
-            # input(colored('\nPlease try again?', 'red', attrs=[
-            # "bold", "underline", "blink"]))
-            return create_project_steps(project_name, project_goal, retries=retries+1)
-
+            ### input(colored('\nPlease try again?', 'red', attrs=[            ### "bold", "underline", "blink"]))            return create_project_steps(project_name, project_goal, retries=retries+1)
 
 async def create_step_tasks(project_name, project_goal, project_step, retries=0):
     projects = load_project_data()
@@ -166,10 +156,7 @@ Is the above list of tasks sufficent?
         if retries < (10/2):
             return create_step_tasks(project_name, project_goal, project_step, retries=retries+1)
         else:
-            # input(colored('\nPlease try again?', 'red', attrs=[
-            # "bold", "underline", "blink"]))
-            return create_step_tasks(project_name, project_goal, project_step, retries=retries+1)
-
+            ### input(colored('\nPlease try again?', 'red', attrs=[            ### "bold", "underline", "blink"]))            return create_step_tasks(project_name, project_goal, project_step, retries=retries+1)
 
 async def create_task_process(project_name, project_goal, project_step, project_task, retries=0):
     projects = load_project_data()
@@ -201,9 +188,7 @@ Describe actions in python code or shell code to complete the following project 
                 return create_task_process(project_name, project_goal,
                                            project_step, project_task, retries=retries+1)
             else:
-                # input(colored('\nPlease try again?', 'red', attrs=[
-                #     "bold", "underline", "blink"]))
-                return create_task_process(project_name, project_goal,
+                ### input(colored('\nPlease try again?', 'red', attrs=[                ###     "bold", "underline", "blink"]))                return create_task_process(project_name, project_goal,
                                            project_step, project_task, retries=retries+1)
 
     elif process_response[1] == "text":
@@ -217,11 +202,8 @@ Describe actions in python code or shell code to complete the following project 
             return create_task_process(project_name, project_goal,
                                        project_step, project_task, retries=retries+1)
         else:
-            # input(colored('\nPlease try again?', 'red', attrs=[
-            # "bold", "underline", "blink"]))
-            return create_task_process(project_name, project_goal,
+            ### input(colored('\nPlease try again?', 'red', attrs=[            ### "bold", "underline", "blink"]))            return create_task_process(project_name, project_goal,
                                        project_step, project_task, retries=retries+1)
-
 
 def doLive(goal):
     base_projects = load_project_data()

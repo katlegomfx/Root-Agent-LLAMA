@@ -1,3 +1,4 @@
+import ollama
 import time
 import json
 import os
@@ -28,12 +29,12 @@ from Bot.build.code.session.constants import (
     gen_ai_path
 )
 
-async def chat(messages: List[Dict[str, str]]) -> str:
+async def chat(messages: List[Dict[str, str]], model: str = 'llama3.2') -> str:
     """Sends a list of messages to the AsyncClient and streams the assistant response."""
     assistant_response = ''
     # Directly iterate over the async iterator returned by AsyncClient().chat(...)
     client = AsyncClient()
-    response_generator = await client.chat(model='llama3.2', messages=messages, stream=True)
+    response_generator = await client.chat(model=model, messages=messages, stream=True)
     async for part in response_generator:
         section = part['message']['content']
         print(section, end='', flush=True)
@@ -41,11 +42,26 @@ async def chat(messages: List[Dict[str, str]]) -> str:
     print()
     return assistant_response
 
+def see(messages: List[Dict[str, Any]]) -> str:
+    # messages = [{
+    #     'role': 'user',
+    #     'content': 'What is in this image?',
+    #     'images': ['image.jpg']
+    # }]
+    response = ollama.chat(
+        model='llama3.2-vision',
+        messages=messages,
+        stream=True
+    )
+    assistant_response = ''
+    for chunk in response:
+        section = chunk['message']['content']
+        print(section, end='', flush=True)
+        assistant_response += section
+    print()
+    return response
 
-
-
-
-async def process_user_messages_with_model(messages: List[Dict[str, str]], tool_use: bool = False, execute: bool = False) -> str:
+async def process_user_messages_with_model(messages: List[Dict[str, str]], tool_use: bool = False, execute: bool = False, model: str = 'llama3.2') -> str:
     """
     Processes user messages with the Ollama model. Depending on the parameters, it may extract code blocks 
     (either JSON for tools or Python code), run commands, and store results and metadata.
@@ -60,9 +76,8 @@ async def process_user_messages_with_model(messages: List[Dict[str, str]], tool_
     """
     try:
         start_time = time.time()
-        assistant_response = await chat(messages)
+        assistant_response = await chat(messages, model)
         time_taken = time.time() - start_time
-
 
         executions = []
 
@@ -72,7 +87,6 @@ async def process_user_messages_with_model(messages: List[Dict[str, str]], tool_
         ts_codes = []
         jsx_codes = []
         js_codes = []
-
 
         if tool_use:
             tool_codes = extract_code(assistant_response, language='json')
@@ -124,7 +138,6 @@ async def process_user_messages_with_model(messages: List[Dict[str, str]], tool_
 
                         # If the agent says it's correct, proceed.
                         # If not, let it fix itself or disclaim the limitation.
-
 
         else:
             py_codes = extract_code(assistant_response)
@@ -201,7 +214,6 @@ async def process_user_messages_with_model(messages: List[Dict[str, str]], tool_
         if executions != []:
             request_info['processing']['executions'] = executions
             assistant_response += "\n".join(executions)
-
 
         json_request_info = json.dumps(request_info, indent=4)
         # input(f"\n\nContinue\n\n{json.loads(json.dumps(

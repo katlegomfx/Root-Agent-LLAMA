@@ -1,5 +1,8 @@
 import os
 
+from Bot.build.code.cli.next.info.add_path import prepend_file_location_check
+from Bot.build.code.cli.next.info.code_cleaner import list_files_with_comment_header
+from Bot.build.code.cli.next.info.line_cleaner import process_directory
 from Bot.build.code.session.constants import (
     config, ai_errors_path, error_file, gen_ai_path)
 from Bot.build.code.llm.prompts import load_message_template, process_user_messages_with_model, code_corpus, read_file_content
@@ -101,6 +104,32 @@ class UserRequests:
         response = await self.send_and_store_message(code_flex_messages)
 
     async def process_self_request(self, user_input: str):
+        directory_to_process = "."
+        extensions_to_process = ('.py')
+        files_to_keep = [
+            "next-env.d.js",
+            "next.config.js",
+            "package.json",
+            "postcss.config.js",
+            "tailwind.config.js",
+            "jsconfig.json"
+        ]
+        ignored_directories = ["node_modules",
+                            ".next", "jsBuild", "jsBuilds", "pyllms", "results"]
+
+        prepend_file_location_check(
+            directory_to_process, extensions_to_process, files_to_keep, ignored_directories)
+        
+        directory_to_process = "."
+        extensions_to_process = ('.py',)
+        ignored_directories = ["node_modules",
+                            ".next", "jsBuild", "jsBuilds", "results"]
+
+        # Get the list of matching files
+        files_with_headers = list_files_with_comment_header(
+            directory_to_process, extensions_to_process, ignored_directories)
+        
+        process_directory('./Bot')
         base_code = "".join(code_corpus('./Bot'))
         user_request = user_input.replace('self ', '')
         prompt = f'# Considering the following:\n\n{

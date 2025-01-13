@@ -6,7 +6,6 @@ from typing import List, Dict, Any
 
 from ollama import AsyncClient
 
-
 from Bot.build.code.llm.llm_client import chat, process_user_messages_with_model
 from Bot.build.code.tasks.run_commands import execute_bash_command, fetch_url_content
 
@@ -128,7 +127,6 @@ def load_message_template(sys_type: str = 'base', summary:str = '') -> List[Dict
     
     return message
 
-
 def extract_ordered_list_with_details(text, typer="Step"):
     items = {}
     counter = 1
@@ -139,25 +137,21 @@ def extract_ordered_list_with_details(text, typer="Step"):
     current_code = []
 
     for line in converted_text:
-        # Check for step/task with numbering
-        if (("step" in line.lower() or "task" in line.lower()) and f"{counter}" in line) or f"{counter}." in line:
-            # Save the previous item if it exists
-            if current_item:
+        ### Check for step/task with numbering        if (("step" in line.lower() or "task" in line.lower()) and f"{counter}" in line) or f"{counter}." in line:
+            ### Save the previous item if it exists            if current_item:
                 if current_code:  # If there's a code block being captured, add it before saving the item
                     current_item["details"]["code"] = '\n'.join(current_code)
                     current_code = []
                 items[f"{typer} {counter - 1}"] = current_item
 
-            # Start a new item
-            base_line = line.replace(f"Step {counter}: ", "").replace(
+            ### Start a new item            base_line = line.replace(f"Step {counter}: ", "").replace(
                 f"{counter}. ", "").strip('**').strip()
             current_item = {"title": base_line,
                             "details": {"instructions": ""}}
 
             counter += 1
 
-        # Detect the start and end of a code block
-        elif "```" in line:
+        ### Detect the start and end of a code block        elif "```" in line:
             if not code_block:  # Start of a code block
                 code_block = True
             else:  # End of a code block
@@ -171,31 +165,25 @@ def extract_ordered_list_with_details(text, typer="Step"):
                             current_code) + "\n"
                 current_code = []
 
-        # If inside a code block, capture the code
-        elif code_block:
+        ### If inside a code block, capture the code        elif code_block:
             current_code.append(line)
 
-        # If not a step and not in a code block, add to instructions
-        elif current_item is not None:
+        ### If not a step and not in a code block, add to instructions        elif current_item is not None:
             if current_item["details"]["instructions"]:
                 current_item["details"]["instructions"] += "\n"
             current_item["details"]["instructions"] += line.strip()
 
-    # Don't forget to add the last item
-    if current_item:
+    ### Don't forget to add the last item    if current_item:
         if current_code:  # If there's a code block being captured, add it before saving the item
             if "code" in current_item["details"]:
                 current_item["details"]["code"] += '\n'.join(current_code)
             else:
                 current_item["details"]["code"] = '\n'.join(current_code)
-        # Only add the code key if it contains code
-        if "code" not in current_item["details"] or not current_item["details"]["code"].strip():
+        ### Only add the code key if it contains code        if "code" not in current_item["details"] or not current_item["details"]["code"].strip():
             current_item["details"].pop("code", None)
         items[f"{typer} {counter - 1}"] = current_item
 
     return items
-
-
 
 async def get_summary_on_files():
     all_summaries = os.listdir(os.path.join(gen_ai_path, ai_summaries_path))
@@ -207,30 +195,24 @@ async def get_summary_on_files():
         latest_summary_datetime = '0'
         latest_summary_file = ''
 
-        # use all_summaries
-        all_summaries.sort()
+        ### use all_summaries        all_summaries.sort()
         if len(all_summaries) >= 1:
             latest_summary_file = all_summaries[-1]
             latest_summary_datetime = latest_summary_file.split('_')[
                 2].split('.')[0]
 
-        # use all_history
-        if latest_summary_datetime != '0':
-            # get history after specific date
-            valid_history_files = [f for f in all_history if f.split(
+        ### use all_history        if latest_summary_datetime != '0':
+            ### get history after specific date            valid_history_files = [f for f in all_history if f.split(
                 '_')[2].split('.')[0] > latest_summary_datetime]
             valid_history_files.sort()
-            # get history before specific date
-            invalid_history_files = [f for f in all_history if f.split(
+            ### get history before specific date            invalid_history_files = [f for f in all_history if f.split(
                 '_')[2].split('.')[0] <= latest_summary_datetime]
             invalid_history_files.sort()
-            # clean up history before specified date
-            for file in invalid_history_files:
+            ### clean up history before specified date            for file in invalid_history_files:
                 shutil.move(os.path.join(gen_ai_path, ai_results_path, file),
                             os.path.join(gen_ai_path, ai_history_path, file))
         else:
-            # get all history if no specified date
-            valid_history_files = [f for f in all_history]
+            ### get all history if no specified date            valid_history_files = [f for f in all_history]
             valid_history_files.sort()
 
         history_data = []
@@ -254,11 +236,9 @@ async def get_summary_on_files():
                     'content': response
                 })
 
-        # if summary and history exists
-        if latest_summary_file != '' and history_data != []:
+        ### if summary and history exists        if latest_summary_file != '' and history_data != []:
             print('Consolidating Summaries and History')
-            # open file and read text
-            with open(os.path.join(gen_ai_path, ai_summaries_path, latest_summary_file), 'r') as f:
+            ### open file and read text            with open(os.path.join(gen_ai_path, ai_summaries_path, latest_summary_file), 'r') as f:
                 latest_summary_text = "".join(f.readlines())
             summary_messages = load_message_template(sys_type='summary')
             full_text = f'# Important Information: \n{latest_summary_text}'
@@ -268,8 +248,7 @@ async def get_summary_on_files():
                     full_text += f"{m['role']}: \n{m['content']}\n\n"
 
             print('Rewriting Summary With New History')
-            # rewrite summary
-            summary_messages.append({
+            ### rewrite summary            summary_messages.append({
                 'role': 'user', 'content': full_text
             })
             result = await chat(summary_messages)
@@ -277,16 +256,13 @@ async def get_summary_on_files():
             with open(os.path.join(gen_ai_path, ai_summaries_path, f'{summary_prefix}_{timestamp}.txt'), 'w') as f:
                 f.write(result)
 
-        # if only summary exists
-        if latest_summary_file != '' and history_data == []:
+        ### if only summary exists        if latest_summary_file != '' and history_data == []:
             print('Consolidating Summary')
-            # open file and read text
-            with open(os.path.join(gen_ai_path, ai_summaries_path, latest_summary_file), 'r') as f:
+            ### open file and read text            with open(os.path.join(gen_ai_path, ai_summaries_path, latest_summary_file), 'r') as f:
                 latest_summary_text = "".join(f.readlines())
             result = latest_summary_text
 
-        # if only summary exists
-        if history_data != [] and latest_summary_file == '':
+        ### if only summary exists        if history_data != [] and latest_summary_file == '':
             print('Consolidating Summary')
             full_text = "Chat History:\n\n"
             for m in history_data:
@@ -294,8 +270,7 @@ async def get_summary_on_files():
                     full_text += f"{m['role']}: \n{m['content']}\n\n"
 
             print('Creating New Summary')
-            # create the new summary
-            summary_messages = load_message_template(sys_type='summary')
+            ### create the new summary            summary_messages = load_message_template(sys_type='summary')
             summary_messages.append({
                 'role': 'user', 'content': full_text
             })
@@ -304,7 +279,6 @@ async def get_summary_on_files():
             timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
             with open(os.path.join(gen_ai_path, ai_summaries_path, f'{summary_prefix}_{timestamp}.txt'), 'w') as f:
                 f.write(result)
-
 
 async def get_message_context_summary(messages_context):
     summary_prompt_messages = load_message_template("summary")
@@ -347,9 +321,7 @@ def get_py_files_recursive(directory, exclude_dirs=None, exclude_files=None):
     if exclude_files is None:
         exclude_files = []
 
-    # Note: This line was causing an error because dir[:] = ... does not modify the original dir variable
-    # We need to use a new list instead
-    
+    ### Note: This line was causing an error because dir[:] = ... does not modify the original dir variable    ### We need to use a new list instead    
 
     py_files = []
     for root, dirs, files in os.walk(directory):
@@ -359,7 +331,6 @@ def get_py_files_recursive(directory, exclude_dirs=None, exclude_files=None):
                 py_files.append(os.path.join(root, file))
 
     return py_files
-
 
 def code_corpus(path: str):
     """
@@ -395,7 +366,6 @@ def code_corpus(path: str):
         current_project_item.append(f'\n## {file_path}:\n{text}\n')
     return current_project_item
 
-
 def read_file_content(path: str) -> str:
     """
     Reads and returns the entire content of a given file.
@@ -408,8 +378,6 @@ def read_file_content(path: str) -> str:
     """
     with open(path, 'r') as f:
         return "".join(f.readlines())
-
-
 
 def add_context_to_messages(messages, context):
     for m in messages:
@@ -427,20 +395,9 @@ async def embedText(writtenText, model='nomic-embed-text'):
         response_generator = await client.embed(model='llama3.2', input=writtenText, stream=True)
         async for part in response_generator:
             section = part['message']['content']
-            # print(section, end='', flush=True)
-            embedded_response += section
+            ### print(section, end='', flush=True)            embedded_response += section
         print()
         return embedded_response
     
-        # request_response = ollama.embed(model='llama3.2',
-                    #  input='The sky is blue because of rayleigh scattering')
-        # ollama.embed(model='llama3.2', input=[
-        #              'The sky is blue because of rayleigh scattering', 'Grass is green because of chlorophyll'])
-        # for line in request_response.iter_lines():
-        #     if line:
-        #         decoded_line = line.decode('utf-8')
-        #         decoded_dict = json.loads(decoded_line)
-        #         decoded_list = decoded_dict['embedding']
-        # return decoded_list
-    except Exception as e:
+        ### request_response = ollama.embed(model='llama3.2',                    ###  input='The sky is blue because of rayleigh scattering')        ### ollama.embed(model='llama3.2', input=[        ###              'The sky is blue because of rayleigh scattering', 'Grass is green because of chlorophyll'])        ### for line in request_response.iter_lines():        ###     if line:        ###         decoded_line = line.decode('utf-8')        ###         decoded_dict = json.loads(decoded_line)        ###         decoded_list = decoded_dict['embedding']        ### return decoded_list    except Exception as e:
         pass

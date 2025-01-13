@@ -26,7 +26,7 @@ def post_echo(message):
 if __name__ == '__main__':
 
     runs = 0
-    tries = 30
+    tries = 5
     base_prompt = [{'role': 'system', 'content': '''You need to build the most Amazing Application that will make money in NextJS and mysql to keep the comapany going. You work at FlexData and will be using the internal AI system to do tasks. Start your message with:
         - tool <request>: Use a internal tools.
         - self <request>: ask about internal code.

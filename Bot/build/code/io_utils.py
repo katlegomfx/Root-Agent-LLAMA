@@ -20,7 +20,6 @@ def write_content_to_file(content: str, path: str) -> None:
     with open(path, 'w') as f:
         f.write(content)
 
-
 def get_next_filename_index(directory: str, prefix: str) -> int:
     """
     Returns the next available file index in the given directory for files 

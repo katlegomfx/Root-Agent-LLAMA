@@ -11,7 +11,6 @@ tool_registry = {
     http_post_data.__name__: http_post_data,
 }
 
-
 def execute_tool(instruction: Dict[str, Any]) -> str:
     """
     Execute a named tool with the provided parameters.

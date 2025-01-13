@@ -1,7 +1,6 @@
 import re
 from Bot.build.code.session.constants import triple_backticks
 
-
 def strip_code_blocks(text: str) -> str:
     """
     Removes code blocks enclosed in triple backticks from the given text.

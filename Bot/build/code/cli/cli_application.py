@@ -16,6 +16,7 @@ from prompt_toolkit.styles import Style
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.patch_stdout import patch_stdout
 
+from Bot.build.code.cli.next.control import execute_commands
 from Bot.build.code.session.config import ensure_build_directories
 from Bot.build.code.session.constants import (
     config, ai_errors_path, error_file, gen_ai_path)
@@ -237,7 +238,8 @@ class CLIApplication(UserRequests, AIRequests, CLIRequests):
 
             elif user_input.startswith("help"):
                 self.display_help()
-
+            elif user_input == "build_base_nextjs":
+                execute_commands()
             else:
                 await self.process_generic_request(user_input)
 

@@ -21,3 +21,12 @@ readline_history.txt
 classesandfunctionsCheck.py
 guideline.md
 systemOutline.md
+
+screenshots
+Bot/build/code/cli/next/utils/nextBuilder/base/migrations/*.js
+Bot/build/code/cli/next/utils/nextBuilder/base/data/*.json
+Bot/build/code/cli/next/utils/nextBuilder/base/.env.local
+Bot/build/code/cli/next/utils/nextBuilder/base/data_macho/*.json
+Bot/build/code/cli/next/utils/nextBuilder/base/public/logofinal.png
+Bot/build/code/cli/next/utils/nextBuilder/base/public_macho/logofinal.png
+Bot/build/code/cli/next/utils/nextBuilder/base/app.js

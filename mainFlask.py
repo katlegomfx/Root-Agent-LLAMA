@@ -30,7 +30,7 @@ def load_context():
         with open(CONTEXT_FILE, 'r') as f:
             try:
                 data = json.load(f)
-                print("Context loaded:", data)
+                # print("Context loaded:", data)
                 return data
             except Exception as e:
                 print("Error loading context, initializing empty context. Error:", e)
@@ -46,11 +46,6 @@ def save_context(context):
     """Save the conversation context to a markdown file."""
     with open(CONTEXT_FILE, 'w') as f:
         json.dump(context, f, indent=4)
-
-
-# Initialize global context by loading from file.
-
-
 
 
 async def trim_context(messages_context, max_length: int = 28):
@@ -75,28 +70,22 @@ def case1():
     async def handle_request():
         # Create a prompt with the current context.
         context = load_context()
+
         prompt = load_message_template('base', context)
         prompt.append({'role': 'user', 'content': data['message']})
 
         response = await process_user_messages_with_model(prompt)
         prompt.append({'role': 'assistant', 'content': response})
 
-        # Update the global context with the new messages.
-        # Declare global to update the module-level variable.
-        
-
         context.append({'role': 'user', 'content': data['message']})
         context.append({'role': 'assistant', 'content': response})
 
-        # Trim the context if it grows beyond the max length.
         context = await trim_context(context)
 
-        # Save the updated context to file.
         save_context(context)
 
         return {'response': response}
 
-    # Run the async function and get the result
     result = asyncio.run(handle_request())
     return jsonify(result)
 

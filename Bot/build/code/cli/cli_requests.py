@@ -1,6 +1,5 @@
 from Bot.build.code.tasks.coder import find_functions_without_docstrings
 
-
 class CLIRequests:
 
     def save_session(self):
