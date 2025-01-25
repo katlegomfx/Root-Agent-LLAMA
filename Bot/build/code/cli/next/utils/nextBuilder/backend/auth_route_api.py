@@ -1,4 +1,4 @@
-# utils\nextBuilder\backend\auth_route_api.py
+# Bot\build\code\cli\next\utils\nextBuilder\backend\auth_route_api.py
 import sys
 import os
 
@@ -106,11 +106,9 @@ export default NextAuth({
 })
 """
 
-
 def create_nextauth_configuration():
     name = '[...nextauth]'
     create_api_route(name, nextAuthJSContent, 'auth')
-
 
 if __name__ == "__main__":
     create_nextauth_configuration()

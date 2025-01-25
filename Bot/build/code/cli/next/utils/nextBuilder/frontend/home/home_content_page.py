@@ -1,4 +1,4 @@
-# utils\nextBuilder\frontend\home\home_content_page.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\home\home_content_page.py
 import sys
 import os
 
@@ -14,7 +14,6 @@ from utils.shared import (  # nopep8
 )
 
 PUBLIC_UI_DIR = "./src/app/public"
-
 
 def create_public_card_template(model_name, model_name_cap, model_name_low, fields):
     """Generates a React page template for a given model."""
@@ -32,7 +31,6 @@ export default function {model_name_cap}PublicPage() {{
 """
     return flex
 
-
 def create_public_main_page_for_model(model_name, fields):
     """Creates a main page for a model under the public UI directory."""
 
@@ -45,7 +43,6 @@ def create_public_main_page_for_model(model_name, fields):
 
     create_page("page",
                 page_content, subdirectory=subdirectory)
-
 
 def main():
     """Main function to generate the Public UI Main Page for each migration file."""
@@ -64,8 +61,6 @@ def main():
             if table_name in public_entities:
                 create_public_main_page_for_model(table_name, fields)
 
-
 if __name__ == "__main__":
     main()
-
 

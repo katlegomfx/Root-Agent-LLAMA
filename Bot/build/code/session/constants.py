@@ -1,7 +1,10 @@
+# Bot\build\code\session\constants.py
 import configparser
 import os
 from dotenv import load_dotenv
 load_dotenv()
+
+MODELS_PATH = "./models/llms/"
 
 triple_backticks = '`'*3
 md_heading = "#"
@@ -27,3 +30,6 @@ error_file = 'currentError.txt'
 config = configparser.ConfigParser()
 config.read("config.ini")
 
+model_map = {
+    "DeepBabySeek": ("unsloth/DeepSeek-R1-Distill-Qwen-1.5B-GGUF", "DeepSeek-R1-Distill-Qwen-1.5B-Q8_0.gguf"),
+}

@@ -1,3 +1,4 @@
+# Bot\build\code\cli\cli_application.py
 import asyncio
 
 import traceback
@@ -28,11 +29,9 @@ from Bot.build.code.cli.user_requests import UserRequests
 from Bot.build.code.cli.cli_requests import CLIRequests
 from Bot.build.code.cli.ai_requests import AIRequests
 
-
 from Bot.build.code.utils.text_utils import strip_code_blocks
 
 ensure_build_directories()
-
 
 class CLIApplication(UserRequests, AIRequests, CLIRequests):
     def __init__(self):
@@ -246,7 +245,6 @@ class CLIApplication(UserRequests, AIRequests, CLIRequests):
         except Exception as e:
             self.handle_error(e, context="Command Handling")
 
-
     def set_config(self, key: str, value: str):
         """Update configuration dynamically."""
         section, option = key.split(".")
@@ -360,7 +358,6 @@ class CLIApplication(UserRequests, AIRequests, CLIRequests):
         # After exiting the loop
         # await self.speak("Application is shutting down.")
 
-
 async def main():
     cli_app = CLIApplication()
 
@@ -414,7 +411,6 @@ async def main():
 
         # Speak shutdown message
         # await cli_app.speak("Application is shutting down.")
-
 
 if __name__ == "__main__":
     try:

@@ -1,4 +1,4 @@
-# utils\nextBuilder\frontend\auth\components\authed_component.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\auth\components\authed_component.py
 import sys
 import os
 
@@ -35,7 +35,6 @@ export default async function useRedirectIfAuthenticated() {
 };
 """
 
-
 def create_flex_gpt_page_file():
     """Generate the flexGPT page file for the Next.js application."""
 
@@ -43,7 +42,6 @@ def create_flex_gpt_page_file():
         app_name, COMPONENT_DIR, 'authedWrapper.jsx')
 
     write_to_file(flex_gpt_page_path, AUTHED_TEMPLATE)
-
 
 if __name__ == "__main__":
     create_flex_gpt_page_file()

@@ -1,9 +1,8 @@
-# utils\nextBuilder\database\sequelize_model_creator.py
+# Bot\build\code\cli\next\utils\nextBuilder\database\sequelize_model_creator.py
 import re
 import logging
 import sys
 import os
-
 
 sys.path.append(os.getcwd())
 

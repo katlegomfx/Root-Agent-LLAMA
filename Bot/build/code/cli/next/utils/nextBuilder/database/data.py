@@ -1,4 +1,4 @@
-# utils\nextBuilder\database\data.py
+# Bot\build\code\cli\next\utils\nextBuilder\database\data.py
 import json
 import sys
 import os
@@ -9,7 +9,6 @@ import logging
 sys.path.append(os.getcwd())
 
 from utils.shared import extract_table_details_from_migration, app_name, MIGRATIONS_DIR  # nopep8
-
 
 def update_user(record):
     connection = mysql.connector.connect(
@@ -42,8 +41,6 @@ def update_user(record):
         return record
     else:
         return results
-
-
 
 def dummy_values(field_details):
     """
@@ -94,7 +91,6 @@ def dummy_values(field_details):
                 dummy_data[field] = "UnknownType"
     return dummy_data
 
-
 def clean_and_update_json(table_name, fields):
     """
     If the JSON file for the table exists, clean and update it.
@@ -110,7 +106,6 @@ def clean_and_update_json(table_name, fields):
         if not records or len(records) == 0:
             records.append(dummy_values(fields))
 
-
         # Retain only fields that exist in the migration
         cleaned_records = []
         for record in records:
@@ -123,7 +118,6 @@ def clean_and_update_json(table_name, fields):
                             for field in fields if field in record}
             cleaned_records.append(cleaned_record)
 
-
         # print(f"Cleaned Records: {cleaned_records}")
         with open(json_filename, 'w') as file:
             json.dump(cleaned_records, file, indent=4)
@@ -132,7 +126,6 @@ def clean_and_update_json(table_name, fields):
         # Create a new JSON file if it doesn't exist
         with open(json_filename, 'w') as file:
             json.dump([], file, indent=4)
-
 
 def main():
 
@@ -145,7 +138,6 @@ def main():
         if table_name:
             clean_and_update_json(table_name, fields)
             logging.info(f"Processed JSON file for table '{table_name}'.")
-
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO,

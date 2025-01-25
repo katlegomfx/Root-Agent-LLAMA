@@ -1,4 +1,4 @@
-# utils\shared.py
+# Bot\build\code\cli\next\utils\shared.py
 
 from string import Template
 import os
@@ -35,25 +35,21 @@ def ensure_folder_exists(folder_path):
     """Ensure that a folder exists, creating it if necessary."""
     os.makedirs(folder_path, exist_ok=True)
 
-
 def create_file_in_directory(directory, name, content, extension='jsx'):
     """Generalized function to create a file with the specified content in a given directory."""
     file_path = os.path.join(app_name, directory, f'{name}.{extension}')
     write_to_file(file_path, content)
-
 
 def create_component(name, content, extension='jsx'):
     """Create a React component file in JavaScript."""
     file_path = os.path.join(app_name, COMPONENT_DIR, f'{name}.{extension}')
     write_to_file(file_path, content)
 
-
 def create_page(name, content, subdirectory=""):
     """Create a Next.js page file, optionally within a subdirectory."""
     directory = PAGE_DIR if subdirectory == "" else os.path.join(
         PAGE_DIR, subdirectory)
     create_file_in_directory(directory, name, content)
-
 
 def create_middleware_route(name, content, subdirectory=""):
     """Create a Next.js API route file, optionally within a subdirectory."""
@@ -67,19 +63,16 @@ def create_api_route(name, content, subdirectory=""):
         API_ROUTE_DIR, subdirectory)
     create_file_in_directory(directory, name, content, extension='js')
 
-
 def render_template(template_path, context={}):
     """Render a template with given context."""
     template_content = load_template(template_path)
     return Template(template_content).substitute(context)
-
 
 def load_template(template_path):
     """Load a template file's content."""
     full_path = os.path.join(app_name, 'src', template_path)
     with open(full_path, 'r', encoding='utf-8') as file:
         return file.read()
-
 
 def extract_table_details_from_migration(migration_filename):
     """
@@ -106,18 +99,15 @@ def extract_table_details_from_migration(migration_filename):
 
     return table_name, fields
 
-
 def create_redux_store_js(template):
     store_dir_path = os.path.join(app_name, 'src', 'store')
     store_file_path = os.path.join(store_dir_path, 'index.js')
     write_to_file(store_file_path, template)
 
-
 def create_redux_reducer_js(template, item):
     store_dir_path = os.path.join(app_name, 'src', 'store', 'states')
     store_file_path = os.path.join(store_dir_path, f'{item}.js')
     write_to_file(store_file_path, template)
-
 
 def generate_specific_api_template(model_name, fields):
     """Generate the API template for specific model item operations."""
@@ -170,7 +160,6 @@ def extract_table_details_from_migration(migration_filename):
 
     return table_name, fields
 
-
 def get_input_type(data_type):
     # Map your Sequelize data types to input types (you might need to expand this)
     return {
@@ -180,7 +169,6 @@ def get_input_type(data_type):
         # Add more mappings as needed
     }.get(data_type, "text")
 
-
 def generate_state_update_code(field_name):
     """
     Generate the code for updating the state for a specific field.
@@ -188,17 +176,14 @@ def generate_state_update_code(field_name):
     """
     return "{...formState, '" + field_name + "': e.target.value }"
 
-
 def read_json_manifest(file_path):
     """Read and return the content of a JSON manifest file."""
     with open(file_path, 'r') as file:
         return json.load(file)
 
-
 def filter_entities_by_role(manifest, role_key):
     """Filter and return entities based on a specific role access key."""
     return [entity for entity, attributes in manifest.items() if attributes.get(role_key) == 'yes']
-
 
 def create_link_element(model_name, role):
     """Create and return a link element for the React component."""
@@ -212,7 +197,6 @@ def create_link_element(model_name, role):
 </li>'''
     )
     return link
-
 
 def generate_main_component_content_without(links, role):
     role_cap = role.capitalize()
@@ -238,7 +222,6 @@ export default function {role_cap}MainLinks() {{
     );
 }}
 """
-
 
 def generate_main_component_content_with_state(links, role):
     role_cap = role.capitalize()
@@ -267,7 +250,6 @@ export default function {role_cap}MainLinks() {{
 }}
 """
 
-
 def generate_main_component_content(links, role):
     """Generate the main page content for a React component based on the role."""
     template = """'use client'
@@ -288,13 +270,11 @@ def generate_main_component_content(links, role):
     """
     return template.format(role=role.capitalize(), links="\n".join(links))
 
-
 def write_to_file(file_path, content):
     """Write given content to a specified file path."""
     ensure_folder_exists(os.path.dirname(file_path))
     with open(file_path, 'w', encoding='utf-8') as file:
         file.write(content)
-
 
 def process_migration_files(migrations_dir, entities, role):
     """Process migration files and return a list of links based on the role."""
@@ -310,7 +290,6 @@ def process_migration_files(migrations_dir, entities, role):
             if entities == None:
                 links.append(create_link_element(table_name, role))
     return links
-
 
 def generate_grid_items(fields, model_name):
     primary_key = fields['primary_key']
@@ -349,7 +328,6 @@ def generate_grid_items_without(fields, model_name):
         </div>
     ))}}
     """
-
 
 def create_react_page_template_without(model_name, role, grid_items, fields):
     primary_key = fields['primary_key']
@@ -411,7 +389,6 @@ export default function {model_name_cap}{role}Content() {{
     );
 }}
 """
-
 
 def create_react_page_template(model_name, role, grid_items, fields):
     primary_key = fields['primary_key']
@@ -483,13 +460,11 @@ export default function {model_name_cap}{role}Content() {{
 }}
 """
 
-
 def create_component_file_for_entity(entity, fields, role, directory):
     grid_items = generate_grid_items(fields, entity)
     page_content = create_react_page_template(entity, role, grid_items)
     file_path = os.path.join(directory, f"{entity.capitalize()}Component.jsx")
     write_to_file(file_path, page_content)
-
 
 def create_form_template(entity, entity_cap, fields, primary_key, role):
     entity_low = entity.lower()
@@ -577,7 +552,6 @@ export default function {entity_cap}{role}Form() {{
 """
     return component_template
 
-
 def create_form_for_entity(entity, fields, primary_key, role, directory):
     entity_cap = entity.capitalize()
     entity_low = entity.lower()
@@ -594,7 +568,6 @@ def create_form_for_entity(entity, fields, primary_key, role, directory):
 
     write_to_file(form_path, form_content)
 
-
 def generate_components_for_role(migrations_dir, role, directory, manifest=None):
     entities = read_json_manifest(manifest) if manifest else None
     for migration_file in os.listdir(os.path.join(app_name, MIGRATIONS_DIR)):
@@ -607,14 +580,12 @@ def generate_components_for_role(migrations_dir, role, directory, manifest=None)
                 create_component_file_for_entity(
                     table_name, fields, role, directory)
 
-
 def create_view_component(model_name, model_name_cap, model_name_low, fields, role):
 
     if role == "Public":
         role_lower = "home"
     else:
         role_lower = role.lower()
-
 
     flex = f"""'use client'
 import {model_name_cap}{role}Content from '@/components/{role_lower}/{model_name}/{model_name_cap}{role}Content'

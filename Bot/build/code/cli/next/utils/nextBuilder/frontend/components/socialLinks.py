@@ -1,4 +1,4 @@
-# utils\nextBuilder\frontend\components\socialLinks.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\components\socialLinks.py
 import sys
 import os
 
@@ -45,6 +45,5 @@ const SocialLinks = () => (
 
 export default SocialLinks;
 """
-
 
 create_component('SocialLinks', COMPONENT_TEMPLATE)

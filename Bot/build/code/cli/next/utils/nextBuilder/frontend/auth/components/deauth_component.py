@@ -1,4 +1,4 @@
-# utils\nextBuilder\frontend\auth\components\deauth_component.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\auth\components\deauth_component.py
 import sys
 import os
 
@@ -56,7 +56,6 @@ export default function useRedirectIfUnauthenticated() {
 }
 """
 
-
 def create_flex_gpt_page_file():
     """Generate the flexGPT page file for the Next.js application."""
 
@@ -64,7 +63,6 @@ def create_flex_gpt_page_file():
         app_name, COMPONENT_DIR, 'deauthedWrapper.jsx')
 
     write_to_file(flex_gpt_page_path, DEAUTH_TEMPLATE)
-
 
 if __name__ == "__main__":
     create_flex_gpt_page_file()

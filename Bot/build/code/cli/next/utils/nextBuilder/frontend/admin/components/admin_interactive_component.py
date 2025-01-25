@@ -1,4 +1,4 @@
-# utils\nextBuilder\frontend\admin\components\admin_interactive_component.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\admin\components\admin_interactive_component.py
 import sys
 import os
 
@@ -31,7 +31,6 @@ def create_admin_interactive_components():
                 if primary_key:
                     create_form_for_entity(
                         table_name, fields, primary_key, 'Admin', os.path.join(app_name, COMPONENT_DIR))
-
 
 if __name__ == "__main__":
     create_admin_interactive_components()

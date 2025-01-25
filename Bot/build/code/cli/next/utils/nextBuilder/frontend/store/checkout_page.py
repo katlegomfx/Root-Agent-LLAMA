@@ -1,4 +1,4 @@
-# utils\nextBuilder\frontend\store\checkout_page.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\store\checkout_page.py
 
 import sys
 import os
@@ -6,7 +6,6 @@ import os
 sys.path.append(os.getcwd())
 
 from utils.shared import create_page  # nopep8
-
 
 def creator_main_page():
     # Template for the Creator Main Page
@@ -24,7 +23,6 @@ export default function CheckoutPage() {
 }
 """
     create_page('page', flex, subdirectory='store/checkout')
-
 
 if __name__ == "__main__":
     creator_main_page()

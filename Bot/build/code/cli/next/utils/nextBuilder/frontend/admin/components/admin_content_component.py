@@ -1,4 +1,4 @@
-# utils\nextBuilder\frontend\admin\components\admin_content_component.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\admin\components\admin_content_component.py
 import sys
 import os
 
@@ -15,7 +15,6 @@ from utils.shared import (  # nopep8
     write_to_file,
     app_name
 )
-
 
 def create_admin_content_components():
     # Load and filter entities for admin access from the manifest
@@ -38,7 +37,6 @@ def create_admin_content_components():
                                               COMPONENT_DIR, 'admin', table_name, f"{table_name.capitalize()}AdminContent.jsx")
                 write_to_file(component_path,
                               page_content)
-
 
 if __name__ == "__main__":
     create_admin_content_components()

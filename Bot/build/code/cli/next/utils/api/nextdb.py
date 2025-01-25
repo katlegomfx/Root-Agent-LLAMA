@@ -1,4 +1,4 @@
-# utils\api\nextdb.py
+# Bot\build\code\cli\next\utils\api\nextdb.py
 import sys
 import subprocess
 import logging
@@ -27,7 +27,6 @@ def create_db():
         print(f"Executing: {command}")
         process = subprocess.Popen(command, shell=True)
         process.wait()  # Wait for the command to complete
-
 
     logging.info("Finished DB Build")
 

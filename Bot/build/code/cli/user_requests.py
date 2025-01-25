@@ -1,14 +1,14 @@
+# Bot\build\code\cli\user_requests.py
 import os
 
 from Bot.build.code.cli.next.info.add_path import prepend_file_location_check
 from Bot.build.code.cli.next.info.code_cleaner import list_files_with_comment_header
+from Bot.build.code.cli.next.info.dry_check import find_similar_code_in_directory
 from Bot.build.code.cli.next.info.line_cleaner import process_directory
 from Bot.build.code.session.constants import (
     config, ai_errors_path, error_file, gen_ai_path)
 from Bot.build.code.llm.prompts import load_message_template, process_user_messages_with_model, code_corpus, read_file_content
 from Bot.build.code.io_utils import write_content_to_file
-
-
 
 class UserRequests:
 
@@ -115,7 +115,7 @@ class UserRequests:
             "jsconfig.json"
         ]
         ignored_directories = ["node_modules",
-                            ".next", "jsBuild", "jsBuilds", "pyllms", "results"]
+                            ".next", "jsBuild", "jsBuilds", "pyllms", "pyds", "results"]
 
         prepend_file_location_check(
             directory_to_process, extensions_to_process, files_to_keep, ignored_directories)
@@ -123,13 +123,22 @@ class UserRequests:
         directory_to_process = "."
         extensions_to_process = ('.py',)
         ignored_directories = ["node_modules",
-                            ".next", "jsBuild", "jsBuilds", "results"]
+                            ".next", "jsBuild", "jsBuilds", "results", "pyds"]
 
         # Get the list of matching files
-        files_with_headers = list_files_with_comment_header(
-            directory_to_process, extensions_to_process, ignored_directories)
+        # files_with_headers = list_files_with_comment_header(
+        #     directory_to_process, extensions_to_process, ignored_directories)
+        
+        similar_code_pieces = find_similar_code_in_directory('./Bot', min_match_lines=4)
+
+        output_filepath = "similar_code_report.md"
+        write_content_to_file(similar_code_pieces, output_filepath)
+
         
         process_directory('./Bot')
+    
+        input("similar_code_pieces")
+
         base_code = "".join(code_corpus('./Bot'))
         user_request = user_input.replace('self ', '')
         prompt = f'# Considering the following:\n\n{

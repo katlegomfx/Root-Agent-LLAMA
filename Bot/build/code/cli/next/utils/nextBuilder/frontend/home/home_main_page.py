@@ -1,11 +1,10 @@
-# utils\nextBuilder\frontend\home\home_main_page.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\home\home_main_page.py
 import sys
 import os
 
 sys.path.append(os.getcwd())
 
 from utils.shared import create_page  # nopep8
-
 
 def public_main_page():
     # Template for the Public Main Page
@@ -23,7 +22,6 @@ export default function PublicMainPage() {
 }
 """
     create_page('page', flex, subdirectory='home')
-
 
 if __name__ == "__main__":
     public_main_page()

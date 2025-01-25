@@ -1,4 +1,4 @@
-# utils\nextBuilder\backend\geo_api.py
+# Bot\build\code\cli\next\utils\nextBuilder\backend\geo_api.py
 import json
 import sys
 import os
@@ -12,7 +12,6 @@ GEOLOCATION_COMPONENT_JS_CONTENT = """'use client'
 import { useSelector, useDispatch } from 'react-redux';
 import { useEffect } from 'react';
 import { setPosition } from '@/store/states/geolocationSlice';
-
 
 const logLocation = (dispatch) => {
     const getLocation = () => {
@@ -57,11 +56,9 @@ const GeoLocationLogger = () => {
 export default GeoLocationLogger;
 """
 
-
 # Function to create the Geolocation component in JavaScript
 def create_geolocation_component_js():
     create_component('GeoLocationLogger', GEOLOCATION_COMPONENT_JS_CONTENT)
-
 
 if __name__ == "__main__":
     create_geolocation_component_js()

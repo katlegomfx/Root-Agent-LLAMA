@@ -1,4 +1,4 @@
-# utils\nextBuilder\frontend\auth\send_page.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\auth\send_page.py
 import json
 import sys
 import os
@@ -20,7 +20,6 @@ export default function Page() {
         )
 }
 """
-
 
 def create_registration_page():
     """Generate the registration page for the Next.js application."""

@@ -1,4 +1,4 @@
-# building\info\add_path.py
+# Bot\build\code\cli\next\info\add_path.py
 import os
 import logging
 

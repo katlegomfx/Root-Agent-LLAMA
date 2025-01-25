@@ -1,4 +1,4 @@
-# utils\nextBuilder\database\database_migration.py
+# Bot\build\code\cli\next\utils\nextBuilder\database\database_migration.py
 import subprocess
 import sys
 import os

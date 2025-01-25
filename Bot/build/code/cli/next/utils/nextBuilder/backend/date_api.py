@@ -1,11 +1,10 @@
-# utils\nextBuilder\backend\date_api.py
+# Bot\build\code\cli\next\utils\nextBuilder\backend\date_api.py
 import sys
 import os
 
 sys.path.append(os.getcwd())
 
 from utils.shared import create_api_route  # nopep8
-
 
 def generate_latest_date_api():
     """Generate an API template that provides the latest date with separated components."""
@@ -41,10 +40,8 @@ export default async function handler(req, res) {{
 }}
 """
 
-
 def create_date_api_js_route():
     create_api_route('index', generate_latest_date_api().lstrip(), subdirectory="date")
-
 
 if __name__ == "__main__":
     create_date_api_js_route()

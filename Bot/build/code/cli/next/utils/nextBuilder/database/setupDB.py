@@ -1,4 +1,4 @@
-# utils\nextBuilder\database\setupDB.py
+# Bot\build\code\cli\next\utils\nextBuilder\database\setupDB.py
 import json
 import sys
 import os
@@ -10,7 +10,6 @@ import logging
 sys.path.append(os.getcwd())
 
 from utils.shared import db_name, app_name  # nopep8
-
 
 def create_database(db_name):
     try:
@@ -44,9 +43,7 @@ def create_database(db_name):
             connection.close()
             print("MySQL connection is closed")
 
-
 create_database(db_name)
-
 
 def update_database_values(json_file_path, new_dev_db, new_test_db, new_prod_db):
     # Open and read the JSON file
@@ -61,7 +58,6 @@ def update_database_values(json_file_path, new_dev_db, new_test_db, new_prod_db)
     # Write the updated JSON back to the file
     with open(json_file_path, 'w') as file:
         json.dump(data, file, indent=2)
-
 
 json_file_path = os.path.join(app_name, 'src', 'config', 'config.json')
 using = db_name.split('_')[0]

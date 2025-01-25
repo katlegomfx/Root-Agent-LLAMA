@@ -1,4 +1,4 @@
-# utils\nextBuilder\frontend\user\components\user_interactive_component.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\user\components\user_interactive_component.py
 import sys
 import os
 
@@ -17,7 +17,6 @@ from utils.shared import (  # nopep8
 )
 
 # Function to generate interactive components for entities with user access
-
 
 def create_user_interactive_components():
     # Load and filter entities designated for user access
@@ -40,7 +39,6 @@ def create_user_interactive_components():
                     # Generate and create a form component for the entity
                     create_form_for_entity(
                         table_name, fields, primary_key, 'User', os.path.join(app_name, COMPONENT_DIR))
-
 
 if __name__ == "__main__":
     create_user_interactive_components()

@@ -1,4 +1,4 @@
-# utils\nextBuilder\frontend\admin\components\admin_main_component.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\admin\components\admin_main_component.py
 import sys
 import os
 
@@ -14,7 +14,6 @@ from utils.shared import (  # nopep8
     COMPONENT_DIR,
     app_name
 )
-
 
 def create_component_admin_page():
     public_access_manifest = read_json_manifest('./am_file.json')
@@ -34,7 +33,6 @@ def create_component_admin_page():
 
     # Write the generated content to the main admin page file
     write_to_file(admin_component_path, main_component_content)
-
 
 if __name__ == "__main__":
     create_component_admin_page()

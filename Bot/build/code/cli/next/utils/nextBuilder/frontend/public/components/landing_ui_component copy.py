@@ -1,4 +1,4 @@
-# utils\nextBuilder\frontend\public\components\landing_ui_component copy.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\public\components\landing_ui_component copy.py
 import sys
 import os
 
@@ -32,7 +32,6 @@ export default function Home() {
   );
 }
 """
-
 
 create_component('LandingComponent', PUBLIC_MAIN_PAGE_TEMPLATE)
 

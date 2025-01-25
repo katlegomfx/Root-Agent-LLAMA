@@ -1,4 +1,4 @@
-# utils\api\nextui.py
+# Bot\build\code\cli\next\utils\api\nextui.py
 import subprocess
 import sys
 import logging
@@ -40,7 +40,6 @@ def create_uis():
         f'{sys.executable} utils/nextBuilder/frontend/components/music/music_content_component.py',
         f'{sys.executable} utils/nextBuilder/frontend/components/music/music_component.py',
 
-
         # Store feature
         f'{sys.executable} utils/nextBuilder/frontend/store/cart_page.py',
         f'{sys.executable} utils/nextBuilder/frontend/store/components/cart_component.py',
@@ -57,10 +56,7 @@ def create_uis():
         f'{sys.executable} utils/nextBuilder/frontend/store/productListWildcard_page.py',
         f'{sys.executable} utils/nextBuilder/frontend/store/components/productView_component.py',
 
-
         # f'{sys.executable} utils/nextBuilder/frontend/store/components/search_component.py',
-
-
 
         # Basic
         f'{sys.executable} utils/nextBuilder/frontend/basic/layout.py',
@@ -94,8 +90,6 @@ def create_uis():
         # f'{sys.executable} utils/nextBuilder/frontend/localFTP/ftp_ui_page.py',
         # f'{sys.executable} utils/nextBuilder/frontend/localFTP/components/ftp_ui_component.py',
 
-
-
         #  Home UI
         f'{sys.executable} utils/nextBuilder/frontend/home/home_main_page.py',
         f'{sys.executable} utils/nextBuilder/frontend/home/home_content_page.py',
@@ -104,7 +98,6 @@ def create_uis():
         f'{sys.executable} utils/nextBuilder/frontend/home/components/home_main_component.py',
         f'{sys.executable} utils/nextBuilder/frontend/home/components/home_interactive_component.py',
 
-
         #  Creator UI
         f'{sys.executable} utils/nextBuilder/frontend/creator/creator_main_page.py',
         f'{sys.executable} utils/nextBuilder/frontend/creator/creator_content_page.py',
@@ -112,7 +105,6 @@ def create_uis():
         f'{sys.executable} utils/nextBuilder/frontend/creator/components/creator_content_component.py',
         f'{sys.executable} utils/nextBuilder/frontend/creator/components/creator_main_component.py',
         f'{sys.executable} utils/nextBuilder/frontend/creator/components/creator_interactive_component.py',
-
 
         #  Admin UI
         f'{sys.executable} utils/nextBuilder/frontend/admin/admin_main_page.py',
@@ -136,7 +128,6 @@ def create_uis():
         print(f"Executing: {command}")
         process = subprocess.Popen(command, shell=True)
         process.wait()  # Wait for the command to complete
-
 
     logging.info("Finished UI Build")
 

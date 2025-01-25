@@ -1,4 +1,4 @@
-# utils\nextBuilder\frontend\ai\components\ai_ui_component.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\ai\components\ai_ui_component.py
 import sys
 import os
 
@@ -254,7 +254,6 @@ export default function Tiny() {
     }
   };
 
-
   const showLeft = () => {
     setSliderIndex(0);
   };
@@ -359,7 +358,6 @@ export default function Tiny() {
           )}
         </div>
 
-
       </div>
 <div className="navigation-buttons-container" style={{ display: 'flex', justifyContent: 'center', margin: '20px 0' }}>
   <button onClick={showLeft} style={{ marginRight: '10px' }}>Show Chat</button>
@@ -371,6 +369,5 @@ export default function Tiny() {
 
 }
 """
-
 
 create_component('AIComponent', FLEX_GPT_TEMPLATE)

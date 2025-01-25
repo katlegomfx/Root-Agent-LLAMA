@@ -1,7 +1,6 @@
-# utils\nextBuilder\frontend\components\text\text_component.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\components\text\text_component.py
 import sys
 import os
-
 
 sys.path.append(os.getcwd())
 
@@ -10,7 +9,6 @@ from utils.shared import (  # nopep8
     COMPONENT_DIR,
     app_name
 )
-
 
 def create_view_component_2(model_name, model_name_cap):
 
@@ -51,8 +49,6 @@ export default function {model_name_cap}Component({{ setting }}) {{
 
     return flex
 
-
-
 def create_components():
 
     component_content = create_view_component_2(
@@ -68,7 +64,6 @@ def create_components():
 
     write_to_file(
         component_path, component_content)
-
 
 if __name__ == "__main__":
     create_components()

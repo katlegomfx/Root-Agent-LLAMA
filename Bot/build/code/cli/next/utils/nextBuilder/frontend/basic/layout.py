@@ -1,4 +1,4 @@
-# utils\nextBuilder\frontend\basic\layout.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\basic\layout.py
 import json
 import sys
 import os
@@ -24,7 +24,6 @@ import SiteInformation from '@/components/siteInformation';
 import BackButton from '@/components/goBack';
 
 import SessionWrapper from '@/components/SessionWrapper'
-
 
 export const metadata = {
   title: "FlexData Hub",
@@ -65,7 +64,6 @@ def create_root_layout():
     layout_path = os.path.join(app_name, PAGE_DIR, 'layout.jsx')
 
     write_to_file(layout_path, LAYOUT_TEMPLATE.strip())
-
 
 if __name__ == "__main__":
     create_root_layout()

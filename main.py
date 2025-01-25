@@ -1,3 +1,4 @@
+# main.py
 import asyncio
 from Bot.build.code.llm.prompts import process_user_messages_with_model, load_message_template
 from Bot.build.code.cli.cli_application import CLIApplication

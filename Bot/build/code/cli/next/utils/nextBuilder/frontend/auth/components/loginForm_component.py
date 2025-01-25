@@ -1,4 +1,4 @@
-# utils\nextBuilder\frontend\auth\components\loginForm_component.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\auth\components\loginForm_component.py
 import json
 import sys
 import os
@@ -102,13 +102,11 @@ export default function LoginComponent() {
 }
 """
 
-
 def create_component_login_page():
 
     login_component_path = os.path.join(app_name,
                                         COMPONENT_DIR, 'LoginForm.jsx')
     write_to_file(login_component_path, LOGIN_COMPONENT_TEMPLATE)
-
 
 if __name__ == "__main__":
     create_component_login_page()

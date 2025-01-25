@@ -1,4 +1,4 @@
-# utils\nextBuilder\frontend\admin\admin_content_page.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\admin\admin_content_page.py
 import sys
 import os
 
@@ -14,7 +14,6 @@ from utils.shared import (  # nopep8
 )
 
 ADMIN_UI_DIR = "./src/app/admin"
-
 
 def create_admin_card_template(model_name, model_name_cap, model_name_low, fields):
     """Generates a React page template for a given model."""
@@ -32,7 +31,6 @@ export default function {model_name_cap}AdminPage() {{
 """
     return flex
 
-
 def create_admin_main_page_for_model(model_name, fields):
     """Creates a main page for a model under the admin UI directory."""
 
@@ -45,7 +43,6 @@ def create_admin_main_page_for_model(model_name, fields):
 
     create_page("page",
                 page_content, subdirectory=subdirectory)
-
 
 def main():
     """Main function to generate the Admin UI Main Page for each migration file."""
@@ -63,7 +60,6 @@ def main():
 
             if table_name in admin_entities:
                 create_admin_main_page_for_model(table_name, fields)
-
 
 if __name__ == "__main__":
     main()

@@ -1,8 +1,6 @@
-# utils\nextBuilder\frontend\components\text\text_viewer_component.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\components\text\text_viewer_component.py
 import sys
 import os
-
-
 
 sys.path.append(os.getcwd())
 
@@ -14,7 +12,6 @@ from utils.shared import (  # nopep8
 )
 
 # Assuming the utils.shared module provides necessary utilities for file operations
-
 
 def create_text_viewer_component():
     component_content = f"""'use client'
@@ -42,6 +39,5 @@ export default TextViewer;
 """
     file_path = os.path.join(app_name, COMPONENT_DIR, 'TextViewer.jsx')
     write_to_file(file_path, component_content)
-
 
 create_text_viewer_component()

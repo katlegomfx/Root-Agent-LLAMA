@@ -1,7 +1,6 @@
-# utils\nextBuilder\frontend\components\video\video_player_component.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\components\video\video_player_component.py
 import sys
 import os
-
 
 sys.path.append(os.getcwd())
 
@@ -47,6 +46,5 @@ export default function VideoPlayer () {{
 """
     file_path = os.path.join(app_name, COMPONENT_DIR, 'VideoPlayer.jsx')
     write_to_file(file_path, component_content)
-
 
 create_video_viewer_component()

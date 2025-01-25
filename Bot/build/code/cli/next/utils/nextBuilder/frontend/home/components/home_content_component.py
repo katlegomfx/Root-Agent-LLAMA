@@ -1,7 +1,6 @@
-# utils\nextBuilder\frontend\home\components\home_content_component.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\home\components\home_content_component.py
 import sys
 import os
-
 
 sys.path.append(os.getcwd())
 
@@ -17,7 +16,6 @@ from utils.shared import (  # nopep8
     generate_grid_items,
     app_name
 )
-
 
 def create_public_content_components():
     # Load and filter entities for public access from the manifest
@@ -46,7 +44,6 @@ def create_public_content_components():
 
                 write_to_file(
                     component_path, page_content)
-
 
 if __name__ == "__main__":
     create_public_content_components()

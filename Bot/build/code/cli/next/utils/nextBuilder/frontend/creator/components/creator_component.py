@@ -1,7 +1,6 @@
-# utils\nextBuilder\frontend\creator\components\creator_component.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\creator\components\creator_component.py
 import sys
 import os
-
 
 sys.path.append(os.getcwd())
 
@@ -16,7 +15,6 @@ from utils.shared import (  # nopep8
     COMPONENT_DIR,
     app_name
 )
-
 
 def create_creator_components():
     # Load the manifest and filter for entities with creator page access
@@ -51,7 +49,6 @@ def create_creator_components():
 
                 write_to_file(
                     creator_component_path, component_content)
-
 
 if __name__ == "__main__":
     create_creator_components()

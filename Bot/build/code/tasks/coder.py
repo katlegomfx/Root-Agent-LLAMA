@@ -1,3 +1,4 @@
+# Bot\build\code\tasks\coder.py
 import ast
 import os
 from typing import List
@@ -43,8 +44,10 @@ def find_functions_without_docstrings(path: str) -> List[ast.Dict]:
             print(f"Skipping file {filepath} due to parsing error: {e}")
 
     elif os.path.isdir(path):
-        ### Recursively process a directory        for root, _, files in os.walk(path):
-            ### Skip hidden directories like .git or __pycache__            if any(part.startswith(".") for part in root.split(os.sep)):
+        ### Recursively process a directory        
+        for root, _, files in os.walk(path):
+            ### Skip hidden directories like .git or __pycache__            
+            if any(part.startswith(".") for part in root.split(os.sep)):
                 continue
             for file in files:
                 if file.endswith(".py"):
@@ -83,4 +86,5 @@ def find_functions_without_docstrings(path: str) -> List[ast.Dict]:
     return functions_without_docstrings
 
 def improve_adherence_to_python_standards(code: str) -> str:
-    ### Pseudo: run some style check or transformation logic    ### Or call black / autopep8 programmatically    return code
+    ### Pseudo: run some style check or transformation logic    ### Or call black / autopep8 programmatically    
+    return code

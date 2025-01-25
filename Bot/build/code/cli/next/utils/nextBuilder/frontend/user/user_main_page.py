@@ -1,11 +1,10 @@
-# utils\nextBuilder\frontend\user\user_main_page.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\user\user_main_page.py
 import sys
 import os
 
 sys.path.append(os.getcwd())
 
 from utils.shared import create_page  # nopep8
-
 
 def user_main_page():
     # Template for the User Main Page
@@ -24,7 +23,6 @@ export default function UserMainPage() {
 }
 """
     create_page('page', flex, subdirectory='user')
-
 
 if __name__ == "__main__":
     user_main_page()

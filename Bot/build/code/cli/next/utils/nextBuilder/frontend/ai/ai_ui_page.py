@@ -1,11 +1,10 @@
-# utils\nextBuilder\frontend\ai\ai_ui_page.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\ai\ai_ui_page.py
 import sys
 import os
 
 sys.path.append(os.getcwd())
 
 from utils.shared import create_page  # nopep8
-
 
 def ai_page():
 

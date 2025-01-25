@@ -1,11 +1,10 @@
-# utils\nextBuilder\frontend\admin\admin_main_page.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\admin\admin_main_page.py
 import sys
 import os
 
 sys.path.append(os.getcwd())
 
 from utils.shared import create_page  # nopep8
-
 
 def admin_main_page():
     # Template for the Admin Main Page
@@ -24,7 +23,6 @@ export default function AdminMainPage() {
 }
 """
     create_page('page', flex, subdirectory='admin')
-
 
 if __name__ == "__main__":
     admin_main_page()

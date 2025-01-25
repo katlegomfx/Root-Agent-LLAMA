@@ -1,4 +1,4 @@
-# utils\nextBuilder\backend\siteInfo_api.py
+# Bot\build\code\cli\next\utils\nextBuilder\backend\siteInfo_api.py
 import json
 import sys
 import os
@@ -14,7 +14,6 @@ import { useEffect } from 'react';
 import { setSiteInfo } from '@/store/states/siteInfoSlice';
 import { getSession, Session } from 'next-auth/react';
 import { RootState } from '@/store';
-
 
 export default function SiteInformation() {
     const dispatch = useDispatch();
@@ -72,7 +71,6 @@ export default function SiteInformation() {
 
 def create_site_information_component():
     create_component('SiteInformation', SITE_INFORMATION_CONTENT)
-
 
 if __name__ == "__main__":
     create_site_information_component()

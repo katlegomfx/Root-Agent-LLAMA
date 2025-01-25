@@ -1,4 +1,4 @@
-# utils\nextBuilder\frontend\store\components\checkout_component.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\store\components\checkout_component.py
 
 import json
 import sys
@@ -48,7 +48,6 @@ export default function CheckoutComponent() {
     );
 }
 """.strip()
-
 
 # Write the generated content to the Navbar.jsx file
 file_path = os.path.join(app_name, COMPONENT_DIR,

@@ -1,4 +1,4 @@
-# utils\nextBuilder\database\seeder_data_creator.py
+# Bot\build\code\cli\next\utils\nextBuilder\database\seeder_data_creator.py
 import os
 import re
 import json
@@ -9,7 +9,6 @@ sys.path.append(os.getcwd())
 
 from utils.shared import extract_table_details_from_migration, app_name, MIGRATIONS_DIR  # nopep8
 
-
 def dummy_values(fields):
     """
     Generate dummy values for the given fields.
@@ -18,7 +17,6 @@ def dummy_values(fields):
     for field in fields:
         dummy_data[field] = "Dummy"  # You can customize this logic
     return dummy_data
-
 
 def clean_and_update_json(table_name, fields):
     """
@@ -50,7 +48,6 @@ def clean_and_update_json(table_name, fields):
         with open(json_filename, 'w') as file:
             json.dump([], file, indent=4)
 
-
 def main():
 
     for migration_file in os.listdir(os.path.join(app_name, MIGRATIONS_DIR)):
@@ -61,7 +58,6 @@ def main():
             migration_filename)
         if table_name:
             clean_and_update_json(table_name, fields)
-
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO,

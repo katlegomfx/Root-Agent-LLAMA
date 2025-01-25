@@ -1,4 +1,4 @@
-# building\info\line_cleaner.py
+# Bot\build\code\cli\next\info\line_cleaner.py
 import os
 import re
 
@@ -26,13 +26,17 @@ def process_directory(directory):
     Process all files in the specified directory, excluding __pycache__ directories.
     :param directory: Path to the directory to be processed.
     """
-    for root, dirs, files in os.walk(directory):
-        # Modify dirs in place to skip __pycache__ or any other directories you want to ignore
-        dirs[:] = [d for d in dirs if d != '__pycache__']
-        for file in files:
-            file_path = os.path.join(root, file)
-            process_file(file_path)
-            print(f"Processed {file_path}")
+    try:
+        for root, dirs, files in os.walk(directory):
+            # Modify dirs in place to skip __pycache__ or any other directories you want to ignore
+            dirs[:] = [d for d in dirs if d != '__pycache__']
+            for file in files:
+                if file.endswith('.py') or file.endswith('.js') or file.endswith('.ts') or file.endswith('.jsx') or file.endswith('.tsx'):
+                    file_path = os.path.join(root, file)
+                    process_file(file_path)
+                    # print(f"Processed {file_path} with {__name__}")
+    except Exception as e:
+        print(e)
 
 def main():
     directory = './building/'  # Replace with the path to your directory

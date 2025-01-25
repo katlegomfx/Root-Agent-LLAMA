@@ -1,4 +1,4 @@
-# utils\nextBuilder\frontend\user\components\user_component.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\user\components\user_component.py
 import sys
 import os
 
@@ -14,7 +14,6 @@ from utils.shared import (  # nopep8
     COMPONENT_DIR,
     app_name
 )
-
 
 def create_user_components():
     # Load the manifest and filter for entities with user page access

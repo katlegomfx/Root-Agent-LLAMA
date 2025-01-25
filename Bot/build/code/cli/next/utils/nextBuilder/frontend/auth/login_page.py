@@ -1,4 +1,4 @@
-# utils\nextBuilder\frontend\auth\login_page.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\auth\login_page.py
 import json
 import sys
 import os
@@ -23,7 +23,6 @@ export default function LoginPage() {
 }
 """
 
-
 def create_login_page():
     """Generate the login page for the Next.js application."""
 
@@ -31,7 +30,6 @@ def create_login_page():
     login_page_path = os.path.join(
         app_name, USER_CONTENT_DIR, 'page.jsx')
     write_to_file(login_page_path, LOGIN_PAGE_TEMPLATE)
-
 
 if __name__ == "__main__":
     create_login_page()

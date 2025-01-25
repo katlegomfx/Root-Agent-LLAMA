@@ -1,3 +1,4 @@
+# Bot\build\code\session\session_management.py
 import os
 import json
 from typing import Optional

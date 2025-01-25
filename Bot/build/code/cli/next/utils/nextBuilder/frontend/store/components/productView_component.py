@@ -1,4 +1,4 @@
-# utils\nextBuilder\frontend\store\components\productView_component.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\store\components\productView_component.py
 
 import json
 import sys

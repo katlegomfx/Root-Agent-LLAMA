@@ -1,4 +1,4 @@
-# utils\nextBuilder\backend\click_api.py
+# Bot\build\code\cli\next\utils\nextBuilder\backend\click_api.py
 import json
 import sys
 import os
@@ -13,8 +13,6 @@ import { useState, ReactNode } from 'react';
 import { useSelector } from 'react-redux';
 import { useRouter } from 'next/navigation';
 import { RootState } from '@/store';  // Adjust the import path according to your file structure
-
-
 
 const ClickWrapper = ({ children }) => {
     const [clicked, setClicked] = useState('');
@@ -61,7 +59,6 @@ const ClickWrapper = ({ children }) => {
 
 export default ClickWrapper;
 """
-
 
 def create_click_wrapper_component():
     component_name = 'ClickWrapper'  # Name of your component

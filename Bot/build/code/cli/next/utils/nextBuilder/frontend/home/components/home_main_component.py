@@ -1,4 +1,4 @@
-# utils\nextBuilder\frontend\home\components\home_main_component.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\home\components\home_main_component.py
 import sys
 import os
 
@@ -15,7 +15,6 @@ from utils.shared import (  # nopep8
     COMPONENT_DIR,
     app_name
 )
-
 
 def create_component_public_page():
     public_access_manifest = read_json_manifest('./am_file.json')
@@ -36,7 +35,6 @@ def create_component_public_page():
 
     # Write the generated content to the main public page file
     write_to_file(public_component_path, main_component_content)
-
 
 if __name__ == "__main__":
     create_component_public_page()

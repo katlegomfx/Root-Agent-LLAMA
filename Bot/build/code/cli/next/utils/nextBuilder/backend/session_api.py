@@ -1,4 +1,4 @@
-# utils\nextBuilder\backend\session_api.py
+# Bot\build\code\cli\next\utils\nextBuilder\backend\session_api.py
 import sys
 import os
 
@@ -26,10 +26,8 @@ const SessionWrapper = ({ children }) => {
 export default SessionWrapper
 """
 
-
 def create_session_wrapper_component():
     create_component('SessionWrapper', SESSION_WRAPPER_CONTENT)
-
 
 if __name__ == "__main__":
     create_session_wrapper_component()

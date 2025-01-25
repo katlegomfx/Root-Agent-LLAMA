@@ -1,14 +1,12 @@
-# utils\nextBuilder\setup.py
+# Bot\build\code\cli\next\utils\nextBuilder\setup.py
 import shutil
 import sys
 import os
-
 
 sys.path.append(os.getcwd())
 
 # Importing the app_name variable from the shared module
 from utils.shared import app_name  # nopep8
-
 
 def copy_and_replace(source_path, destination_path):
     """
@@ -18,7 +16,6 @@ def copy_and_replace(source_path, destination_path):
     if os.path.exists(destination_path):
         shutil.rmtree(destination_path)  # Use rmtree for directories
     shutil.copytree(source_path, destination_path)
-
 
 # Define the source and destination paths
 migrations_src = 'utils/nextBuilder/base/migrations'
@@ -41,7 +38,6 @@ else:
         ('utils/nextBuilder/base/.env.local', '.env.local'),
         ('utils/nextBuilder/base/app.js', 'app.js'),
     ]
-
 
 for src, relative_dest in other_sources_destinations:
     dest = os.path.join(app_name, relative_dest)

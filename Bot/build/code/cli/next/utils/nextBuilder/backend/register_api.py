@@ -1,4 +1,4 @@
-# utils\nextBuilder\backend\register_api.py
+# Bot\build\code\cli\next\utils\nextBuilder\backend\register_api.py
 import json
 import sys
 import os
@@ -41,12 +41,10 @@ export default async function register(req, res) {
 }
 """
 
-
 # Use create_api_route to generate the registration API route under the appropriate directory
 def create_registration_api():
     # Specify 'auth' as the subdirectory under 'src/pages/api'
     create_api_route('register', REGISTRATION_API_CONTENT, 'auth')
-
 
 if __name__ == "__main__":
     create_registration_api()

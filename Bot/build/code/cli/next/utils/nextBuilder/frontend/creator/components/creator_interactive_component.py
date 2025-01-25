@@ -1,7 +1,6 @@
-# utils\nextBuilder\frontend\creator\components\creator_interactive_component.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\creator\components\creator_interactive_component.py
 import sys
 import os
-
 
 sys.path.append(os.getcwd())
 
@@ -18,7 +17,6 @@ from utils.shared import (  # nopep8
 )
 
 # Function to generate interactive components for entities with creator access
-
 
 def create_creator_interactive_components():
     # Load and filter entities designated for creator access
@@ -41,7 +39,6 @@ def create_creator_interactive_components():
                     # Generate and create a form component for the entity
                     create_form_for_entity(
                         table_name, fields, primary_key, 'Creator', os.path.join(app_name,COMPONENT_DIR))
-
 
 if __name__ == "__main__":
     create_creator_interactive_components()

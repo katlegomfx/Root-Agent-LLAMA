@@ -1,4 +1,4 @@
-# utils\nextBuilder\backend\login_api.py
+# Bot\build\code\cli\next\utils\nextBuilder\backend\login_api.py
 import json
 import sys
 import os
@@ -38,12 +38,10 @@ export default async function login(req, res) {
 }
 """
 
-
 # Use create_api_route to generate the login.js file under the specified directory
 def create_login_api():
     # 'auth' is the subdirectory under 'src/pages/api'
     create_api_route('login', LOGIN_API_CONTENT, 'auth')
-
 
 if __name__ == "__main__":
     create_login_api()

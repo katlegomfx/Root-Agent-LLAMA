@@ -1,4 +1,4 @@
-# utils\nextBuilder\frontend\store\components\cart_component.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\store\components\cart_component.py
 import json
 import sys
 import os
@@ -67,7 +67,6 @@ export default function ShoppingCart() {
     );
 }
 """
-
 
 # Write the generated content to the Navbar.jsx file
 navbar_path = os.path.join(app_name, COMPONENT_DIR, 'store', 'CartComponent.jsx')

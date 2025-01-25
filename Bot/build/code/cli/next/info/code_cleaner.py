@@ -1,4 +1,4 @@
-# building\info\code_cleaner.py
+# Bot\build\code\cli\next\info\code_cleaner.py
 import os
 
 def remove_second_comment_line(file_path):

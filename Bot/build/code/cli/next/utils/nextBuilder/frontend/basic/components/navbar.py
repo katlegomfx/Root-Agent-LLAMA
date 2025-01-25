@@ -1,4 +1,4 @@
-# utils\nextBuilder\frontend\basic\components\navbar.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\basic\components\navbar.py
 import json
 import sys
 import os
@@ -14,7 +14,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { useSession, signIn, signOut } from "next-auth/react";
 import ShoppingCart from '@/components/cartFeature'
-
 
 export default function Navbar({ site, menu }) {
   const [isNavOpen, setIsNavOpen] = useState(false);
@@ -126,7 +125,6 @@ export default function Navbar({ site, menu }) {
   );
 }
 """
-
 
 # Write the generated content to the Navbar.jsx file
 navbar_path = os.path.join(app_name, COMPONENT_DIR, 'Navbar.jsx')

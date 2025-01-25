@@ -1,4 +1,4 @@
-# utils\nextBuilder\backend\date_utils_api.py
+# Bot\build\code\cli\next\utils\nextBuilder\backend\date_utils_api.py
 import json
 import sys
 import os
@@ -6,7 +6,6 @@ import os
 sys.path.append(os.getcwd())
 
 from utils.shared import extract_table_details_from_migration, write_to_file, MIGRATIONS_DIR, UTILS_DIR, app_name  # nopep8
-
 
 # Template for the latest date utility function
 LATEST_DATE_UTILS_TEMPLATE = """
@@ -25,19 +24,16 @@ export const fetchLatestDate = async () => {{
 }}
 """
 
-
 def create_latest_date_utils():
     """Create a utility function for fetching the latest date."""
     utils_content = LATEST_DATE_UTILS_TEMPLATE.lstrip()
 
     write_to_file(os.path.join(app_name, UTILS_DIR, "date.js"), utils_content)
 
-
 def main():
     """Main function to generate utility functions for each migration file and the latest date."""
     # Generate the latest date utility function
     create_latest_date_utils()
-
 
 if __name__ == "__main__":
     main()

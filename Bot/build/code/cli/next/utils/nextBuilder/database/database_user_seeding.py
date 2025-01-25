@@ -1,4 +1,4 @@
-# utils\nextBuilder\database\database_user_seeding.py
+# Bot\build\code\cli\next\utils\nextBuilder\database\database_user_seeding.py
 import subprocess
 import sys
 import os

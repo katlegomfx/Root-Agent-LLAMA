@@ -1,4 +1,4 @@
-# utils\api\nextapi.py
+# Bot\build\code\cli\next\utils\api\nextapi.py
 import subprocess
 import sys
 import logging
@@ -56,7 +56,6 @@ def create_apis():
         process = subprocess.Popen(command, shell=True)
         process.wait()  # Wait for the command to complete
         # logging.info(f"Succesfully executed: {command}")
-
 
     logging.info("Finished API Build")
 

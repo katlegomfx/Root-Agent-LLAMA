@@ -1,4 +1,4 @@
-# utils\nextBuilder\database\sequelize_seeder.py
+# Bot\build\code\cli\next\utils\nextBuilder\database\sequelize_seeder.py
 import os
 import re
 import json
@@ -8,7 +8,6 @@ import sys
 sys.path.append(os.getcwd())
 
 from utils.shared import extract_table_details_from_migration, write_to_file, app_name, MIGRATIONS_DIR  # nopep8
-
 
 def generate_seeder_content(table_name):
     """
@@ -71,7 +70,6 @@ def main():
             seeder_filename = f"{get_next_prefix()}-{table_name}_seeder.js"
             write_to_file(os.path.join(
                 seeders_path, seeder_filename), seeder_content)
-
 
             logging.info(f"Seeder file '{seeder_filename}' generated successfully!")
 

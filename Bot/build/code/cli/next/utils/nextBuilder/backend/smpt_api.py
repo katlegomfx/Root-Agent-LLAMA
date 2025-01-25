@@ -1,4 +1,4 @@
-# utils\nextBuilder\backend\smpt_api.py
+# Bot\build\code\cli\next\utils\nextBuilder\backend\smpt_api.py
 import tempfile
 import sys
 import os
@@ -6,7 +6,6 @@ import os
 sys.path.append(os.getcwd())
 
 from utils.shared import create_api_route  # nopep8
-
 
 SMTP_API_CONTENT = """import nodemailer from 'nodemailer';
 import crypto from 'crypto';
@@ -65,11 +64,9 @@ export default async function handler(req, res) {
 }
 """
 
-
 def create_smtp_api():
     subdirectory = "auth/password"  # Define the subdirectory path
     create_api_route('send', SMTP_API_CONTENT, subdirectory)
-
 
 if __name__ == "__main__":
     create_smtp_api()

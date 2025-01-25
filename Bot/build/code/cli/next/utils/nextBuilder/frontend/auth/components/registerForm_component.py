@@ -1,4 +1,4 @@
-# utils\nextBuilder\frontend\auth\components\registerForm_component.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\auth\components\registerForm_component.py
 import json
 import sys
 import os
@@ -119,7 +119,6 @@ export default function RegistrationForm() {
     );
 }
 """
-
 
 def create_component_register_page():
 

@@ -1,4 +1,4 @@
-# utils\nextBuilder\database\database_rollback.py
+# Bot\build\code\cli\next\utils\nextBuilder\database\database_rollback.py
 import subprocess
 import sys
 import os

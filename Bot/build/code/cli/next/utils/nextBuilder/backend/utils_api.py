@@ -1,4 +1,4 @@
-# utils\nextBuilder\backend\utils_api.py
+# Bot\build\code\cli\next\utils\nextBuilder\backend\utils_api.py
 import json
 import sys
 import os
@@ -6,7 +6,6 @@ import os
 sys.path.append(os.getcwd())
 
 from utils.shared import extract_table_details_from_migration, write_to_file, MIGRATIONS_DIR, UTILS_DIR, app_name  # nopep8
-
 
 # Template for the utility functions
 UTILS_TEMPLATE = """
@@ -80,7 +79,6 @@ export const delete{model_name_cap} = async (id) => {{
 }}
 """
 
-
 def create_utils_for_model(model_name):
     """Create utility functions for the given model."""
     model_name_cap = model_name.capitalize()
@@ -90,8 +88,6 @@ def create_utils_for_model(model_name):
     # Write the utility functions to a file within the utils directory
     file_path = os.path.join(app_name, UTILS_DIR, f"{model_name}.js")
     write_to_file(file_path, utils_content)
-
-
 
 def main():
     """Main function to generate utility functions for each migration file."""
@@ -103,7 +99,6 @@ def main():
                 migration_filename)
             model_name = table_name
             create_utils_for_model(model_name)
-
 
 if __name__ == "__main__":
     main()

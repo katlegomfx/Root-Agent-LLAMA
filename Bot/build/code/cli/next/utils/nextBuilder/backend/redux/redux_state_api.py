@@ -1,4 +1,4 @@
-# utils\nextBuilder\backend\redux\redux_state_api.py
+# Bot\build\code\cli\next\utils\nextBuilder\backend\redux\redux_state_api.py
 import json
 import sys
 import os
@@ -6,7 +6,6 @@ import os
 sys.path.append(os.getcwd())
 
 from utils.shared import create_redux_store_js  # nopep8
-
 
 # Template for the store index component
 STORE_INDEX_TEMPLATE = """
@@ -54,7 +53,6 @@ export const AppDispatch = store.dispatch;
 
 export const persistor = persistStore(store);
 """
-
 
 if __name__ == "__main__":
     create_redux_store_js(STORE_INDEX_TEMPLATE)

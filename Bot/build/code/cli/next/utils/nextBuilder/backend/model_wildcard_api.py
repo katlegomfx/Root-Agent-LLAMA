@@ -1,4 +1,4 @@
-# utils\nextBuilder\backend\model_wildcard_api.py
+# Bot\build\code\cli\next\utils\nextBuilder\backend\model_wildcard_api.py
 import sys
 import os
 
@@ -55,14 +55,12 @@ export default async function handler(req, res) {{
 }}
 """
 
-
 def create_api_route_for_model(model_name, fields):
     """Create an API route for the given model."""
     new_path_api_dir = os.path.join(app_name, API_ROUTE_DIR, model_name, )
     primary_key = fields['primary_key']
     path = os.path.join(new_path_api_dir, f"[{primary_key}].js")
     write_to_file(path, (generate_api_template(model_name, fields).lstrip()))
-
 
 def main():
     """Main function to generate API routes for each migration file."""
@@ -75,6 +73,5 @@ def main():
                 migration_filename)
             model_name = table_name
             create_api_route_for_model(model_name, fields)
-
 
 main()

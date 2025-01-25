@@ -1,4 +1,4 @@
-# utils\nextBuilder\frontend\basic\components\footer.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\basic\components\footer.py
 import json
 import sys
 import os
@@ -43,7 +43,6 @@ const Footer = ({ site, menu, timing }) => {
 
 export default Footer;
 """
-
 
 # Write the generated content to the Footer.jsx file
 footer_path = os.path.join(app_name, COMPONENT_DIR, 'Footer.jsx')

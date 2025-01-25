@@ -1,11 +1,10 @@
-# utils\nextBuilder\frontend\localFTP\ftp_ui_page.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\localFTP\ftp_ui_page.py
 import sys
 import os
 
 sys.path.append(os.getcwd())
 
 from utils.shared import create_page  # nopep8
-
 
 def ftp_page():
 
@@ -21,6 +20,5 @@ export default function FTPPage() {
 }
 """
     return flex
-
 
 create_page('page', ftp_page(), subdirectory='ftp')

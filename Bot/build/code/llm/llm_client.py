@@ -1,3 +1,4 @@
+# Bot\build\code\llm\llm_client.py
 import ollama
 import time
 import json
@@ -7,6 +8,7 @@ from datetime import datetime
 from typing import List, Dict, Any
 
 from ollama import AsyncClient
+from huggingface_hub import hf_hub_download
 
 from Bot.build.code.io_utils import get_next_filename_index, write_content_to_file
 
@@ -26,8 +28,37 @@ from Bot.build.code.session.constants import (
     anonymised, error_file,
     triple_backticks,
     md_heading,
-    gen_ai_path
+    gen_ai_path,
+    MODELS_PATH,
+    model_map
 )
+
+
+async def inference(messages: List[Dict[str, str]], model_id: str = 'DeepBabySeek') -> str:
+    if model_id not in ollama.list()['models']:
+        model_info, model_basename = model_map[model_id]
+        model_path = hf_hub_download(
+            repo_id=model_info,
+            filename=model_basename,
+            resume_download=True,
+            cache_dir=MODELS_PATH,
+        )
+
+        modelfile = f'''
+FROM {model_path}
+'''
+
+        ollama.create(model=model_id, modelfile=modelfile)
+
+    assistant_response = ''
+    client = AsyncClient()
+    response_generator = await client.chat(model=model_id, messages=messages, stream=True)
+    async for part in response_generator:
+        section = part['message']['content']
+        print(section, end='', flush=True)
+        assistant_response += section
+    print()
+    return assistant_response
 
 async def chat(messages: List[Dict[str, str]], model: str = 'llama3.2') -> str:
     """Sends a list of messages to the AsyncClient and streams the assistant response."""

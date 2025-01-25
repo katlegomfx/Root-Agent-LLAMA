@@ -1,11 +1,10 @@
-# utils\nextBuilder\backend\model_api.py
+# Bot\build\code\cli\next\utils\nextBuilder\backend\model_api.py
 import sys
 import os
 
 sys.path.append(os.getcwd())
 
 from utils.shared import extract_table_details_from_migration, write_to_file, MIGRATIONS_DIR, API_ROUTE_DIR, app_name  # nopep8
-
 
 def generate_api_template(model_name):
     model_name_cap = str(model_name)[0].capitalize()+str(model_name)[1:]
@@ -59,13 +58,11 @@ export default async function handler(req, res) {{
 }}
 """
 
-
 def create_api_route_for_model(model_name):
     """Create an API route for the given model."""
     new_path_api_dir = os.path.join(app_name, API_ROUTE_DIR, model_name, )
     path = os.path.join(new_path_api_dir, f"index.js")
     write_to_file(path, generate_api_template(model_name).lstrip())
-
 
 def main():
     """Main function to generate API routes for each migration file."""
@@ -78,6 +75,5 @@ def main():
                 migration_filename)
             model_name = table_name
             create_api_route_for_model(model_name)
-
 
 main()

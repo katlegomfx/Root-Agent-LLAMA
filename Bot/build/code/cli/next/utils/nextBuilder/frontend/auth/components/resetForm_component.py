@@ -1,4 +1,4 @@
-# utils\nextBuilder\frontend\auth\components\resetForm_component.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\auth\components\resetForm_component.py
 import json
 import sys
 import os
@@ -103,13 +103,11 @@ export default function ResetForm() {
 }
 """
 
-
 def create_component_admin_page():
 
     admin_component_path = os.path.join(app_name,
                                         COMPONENT_DIR, 'ResetForm.jsx')
     write_to_file(admin_component_path, ADMIN_COMPONENT_TEMPLATE)
-
 
 if __name__ == "__main__":
     create_component_admin_page()

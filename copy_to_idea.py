@@ -1,3 +1,4 @@
+# copy_to_idea.py
 
 import shutil
 import os

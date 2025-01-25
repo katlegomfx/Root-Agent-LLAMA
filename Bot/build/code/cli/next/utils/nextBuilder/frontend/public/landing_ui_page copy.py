@@ -1,11 +1,10 @@
-# utils\nextBuilder\frontend\public\landing_ui_page copy.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\public\landing_ui_page copy.py
 import sys
 import os
 
 sys.path.append(os.getcwd())
 
 from utils.shared import create_page, app_name, PAGE_DIR  # nopep8
-
 
 def _page():
 
@@ -26,7 +25,6 @@ export default function AIPage() {
 
     return flex
 
-
 def landing_page():
 
     flex = """import LandingComponent from '@/components/LandingComponent'
@@ -42,7 +40,6 @@ export default function AIPage() {
 """
 
     return flex
-
 
 def macho_page():
 

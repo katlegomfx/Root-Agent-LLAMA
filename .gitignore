@@ -16,9 +16,11 @@ prompts
 __pycache__
 testing.py
 seen.md
+agent.md
 renew.py
 readline_history.txt
 classesandfunctionsCheck.py
+checkImageSystem.py
 guideline.md
 systemOutline.md
 
@@ -30,3 +32,10 @@ Bot/build/code/cli/next/utils/nextBuilder/base/data_macho/*.json
 Bot/build/code/cli/next/utils/nextBuilder/base/public/logofinal.png
 Bot/build/code/cli/next/utils/nextBuilder/base/public_macho/logofinal.png
 Bot/build/code/cli/next/utils/nextBuilder/base/app.js
+
+
+interest
+similar_code_report.md
+orCode.py
+copy_to_idea.py
+checkImageSystem.py

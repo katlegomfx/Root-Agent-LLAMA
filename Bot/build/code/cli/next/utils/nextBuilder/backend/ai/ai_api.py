@@ -1,4 +1,4 @@
-# utils\nextBuilder\backend\ai\ai_api.py
+# Bot\build\code\cli\next\utils\nextBuilder\backend\ai\ai_api.py
 import sys
 import os
 
@@ -54,6 +54,5 @@ export default async function inference(req, res) {
     }
 }
 """
-
 
 create_api_route('inference', ROUTE_API_TEMPLATE)

@@ -1,4 +1,4 @@
-# utils\nextBuilder\frontend\auth\reset_page.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\auth\reset_page.py
 import json
 import sys
 import os
@@ -21,14 +21,12 @@ export default function Page() {
 }
 """
 
-
 def create_registration_page():
     """Generate the registration page for the Next.js application."""
 
     registration_page_path = os.path.join(
         app_name, USER_CONTENT_DIR, 'page.jsx')
     write_to_file(registration_page_path, REGISTRATION_PAGE_TEMPLATE)
-
 
 if __name__ == "__main__":
     create_registration_page()

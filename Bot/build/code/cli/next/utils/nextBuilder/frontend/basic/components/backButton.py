@@ -1,4 +1,4 @@
-# utils\nextBuilder\frontend\basic\components\backButton.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\basic\components\backButton.py
 import json
 import sys
 import os
@@ -86,13 +86,11 @@ export default function BackButton() {
 }
 """
 
-
 def create_back_button_component():
     """Generate the back button component for the Next.js application."""
     # Write the generated content to the goBack.jsx file
     back_button_path = os.path.join(app_name, COMPONENT_DIR, 'goBack.jsx')
     write_to_file(back_button_path, BACKBUTTON_TEMPLATE)
-
 
 if __name__ == "__main__":
     create_back_button_component()

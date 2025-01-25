@@ -1,4 +1,4 @@
-# utils\nextBuilder\frontend\localFTP\components\ftp_ui_component.py
+# Bot\build\code\cli\next\utils\nextBuilder\frontend\localFTP\components\ftp_ui_component.py
 import sys
 import os
 
@@ -119,7 +119,6 @@ function FTPComponent() {
                 <button onClick={downloadFile} className="mt-2 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50">Download File</button>
             </div>
         </div>
-
 
         </div>
     );

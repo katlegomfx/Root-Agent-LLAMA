@@ -1,4 +1,4 @@
-# utils\manager\uploader.py
+# Bot\build\code\cli\next\utils\manager\uploader.py
 import os
 import subprocess
 from ftplib import FTP
@@ -9,7 +9,6 @@ load_dotenv()
 HOST = os.getenv('HOST')
 PSWD = os.getenv('PSWD')
 USER = os.getenv('USER')
-
 
 class FTPClient:
     def __init__(self, host, username, password):
@@ -93,7 +92,6 @@ class FTPClient:
 
         except Exception as e:
             print(f"Failed to delete {remote_path}: {e}")
-
 
 def main():
     ftp_client = FTPClient(host=HOST, username=USER, password=PSWD)
