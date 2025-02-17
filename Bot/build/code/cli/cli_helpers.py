@@ -1,4 +1,7 @@
 # Bot\build\code\cli\cli_helpers.py
+import re
+import sys
+from colorama import Fore, Style
 import os
 import glob
 import shlex
@@ -75,3 +78,23 @@ class CLICompleter(Completer):
 
         except Exception as e:
             print(f"Completer error: {e}")
+
+USE_COLOR = sys.stdout.isatty()
+ESC_LIKE_PATTERN = re.compile(r'(←\[\d+m)')
+
+def strip_model_escapes(text: str) -> str:
+    """
+    Removes leftover model-generated sequences like '←[0m' or '←[33m' 
+    that are not real ANSI escapes but textual artifacts.
+    """
+    return ESC_LIKE_PATTERN.sub('', text)
+
+def colored_print(text: str, color: str = Fore.RESET, end: str = "\n", flush: bool = False):
+    """
+    Prints the given text in the specified color, resetting style afterward.
+    Only prints color codes if USE_COLOR is True.
+    """
+    if USE_COLOR:
+        print(f"{color}{text}{Style.RESET_ALL}", end=end, flush=flush)
+    else:
+        print(text, end=end, flush=flush)

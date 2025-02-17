@@ -1,10 +1,19 @@
 # Bot\build\code\cli\user_requests.py
+import asyncio
 import os
+import sys
+import traceback
 
+from colorama import Fore
+
+from Bot.build.code.cli.cli_helpers import colored_print
 from Bot.build.code.cli.next.info.add_path import prepend_file_location_check
 from Bot.build.code.cli.next.info.code_cleaner import list_files_with_comment_header
 from Bot.build.code.cli.next.info.dry_check import find_similar_code_in_directory
 from Bot.build.code.cli.next.info.line_cleaner import process_directory
+from Bot.build.code.llm.extract import extract_code
+from Bot.build.code.llm.llm_client import chat
+from Bot.build.code.llm.workflows import accomplished_request, code_use, decide_execution, tool_use
 from Bot.build.code.session.constants import (
     config, ai_errors_path, error_file, gen_ai_path)
 from Bot.build.code.llm.prompts import load_message_template, process_user_messages_with_model, code_corpus, read_file_content
@@ -115,29 +124,27 @@ class UserRequests:
             "jsconfig.json"
         ]
         ignored_directories = ["node_modules",
-                            ".next", "jsBuild", "jsBuilds", "pyllms", "pyds", "results"]
+                               ".next", "jsBuild", "jsBuilds", "pyllms", "pyds", "results"]
 
         prepend_file_location_check(
             directory_to_process, extensions_to_process, files_to_keep, ignored_directories)
-        
+
         directory_to_process = "."
         extensions_to_process = ('.py',)
         ignored_directories = ["node_modules",
-                            ".next", "jsBuild", "jsBuilds", "results", "pyds"]
+                               ".next", "jsBuild", "jsBuilds", "results", "pyds"]
 
         # Get the list of matching files
         # files_with_headers = list_files_with_comment_header(
         #     directory_to_process, extensions_to_process, ignored_directories)
-        
-        similar_code_pieces = find_similar_code_in_directory('./Bot', min_match_lines=4)
 
-        output_filepath = "similar_code_report.md"
+        similar_code_pieces = find_similar_code_in_directory(
+            './Bot', min_match_lines=4)
+
+        output_filepath = "prompts/report_similar_code.md"
         write_content_to_file(similar_code_pieces, output_filepath)
 
-        
         process_directory('./Bot')
-    
-        input("similar_code_pieces")
 
         base_code = "".join(code_corpus('./Bot'))
         user_request = user_input.replace('self ', '')
@@ -185,3 +192,96 @@ class UserRequests:
 
         # print(response)
         await self.trim_context()
+
+    async def process_agent_request(self, user_input: str, tries=0):
+        base_code = "".join(code_corpus('./Bot'))
+        user_request = user_input.replace('agent ', '')
+        if len(user_request) >= 3:
+            final_request = f"\n\n# {user_request}"
+            prompt = f'# Considering the following:\n\n{
+                base_code}{final_request}'
+        else:
+            prompt = f'# Considering the following:\n\n{
+                base_code}'
+
+        write_content_to_file(prompt, './prompts/gen/agent_prompt.md')
+        
+        responses = []
+
+        state = False
+        while not state or tries < 5:
+            try:
+                colored_print("Deciding using AI", Fore.GREEN)
+                base_prompt = load_message_template('base', self.summary)
+                base_prompt.append({"role":"user", "content": prompt})
+
+                # print(prompt)
+                # print(len(base_prompt))
+                # print(len([message["content"]
+                #       for message in base_prompt if message["role"] == 'user'][0]))
+                # input("base_prompt")
+      
+                ai_choice = await self.send_and_store_message(base_prompt, send_type='decide')
+                
+                if ai_choice == "python":
+                    colored_print("Starting Python Code Use", Fore.GREEN)
+                    base_prompt = load_message_template('python')
+                    base_prompt.append(prompt)
+                    final_response, code_script, status_message, base_prompt = await code_use(base_prompt)
+                    responses.append(
+                        {
+                            'response': final_response, 
+                            'code': code_script, 
+                            'status': status_message, 
+                            'request': base_prompt
+                        }
+                    )
+
+                elif ai_choice == "tool":
+                    colored_print("Starting Tool Use", Fore.GREEN)
+                    base_prompt = load_message_template('tool')
+                    base_prompt.append(prompt)
+                    base_response, code_script, status_message, base_prompt = await tool_use(base_prompt)
+                    responses.append(
+                        {
+                            'response': base_response,
+                            'instruction': code_script,
+                            'status': status_message,
+                            'request': base_prompt
+                        }
+                    )
+                else:
+                    colored_print("No valid option provided", Fore.CYAN)
+
+            except Exception as e:
+                with open("error.log", "w", encoding="utf-8") as err_file:
+                    err_file.write("An unhandled error occurred:")
+                    traceback.print_exc(file=err_file)
+                error_text = open("error.log", "r", encoding="utf-8").read()
+                base_prompt = load_message_template('python')
+                base_prompt.append({
+                    'role': 'user',
+                    'content': f"Look at the following error:\n{error_text}\nIn the code:\n{base_code}\nHow can we fix this error"
+                })
+                fix_res = asyncio.run(chat(base_prompt))
+                open("error_fix.md", "w", encoding="utf-8").write(fix_res)
+                sys.exit(1)
+
+            finally:
+                colored_print("Checking task was completed", Fore.GREEN)
+                tries += 1
+                check_prompt = load_message_template('check', self.summary)
+                check_prompt.append(
+                    {
+                        'role': 'user',
+                        'content': responses
+                    }
+                )
+                
+                print(check_prompt)
+                input("check_prompt")
+
+                ai_choice = await self.send_and_store_message(base_prompt, send_type='check')
+                if 'no' not in ai_choice:
+                    state = True
+

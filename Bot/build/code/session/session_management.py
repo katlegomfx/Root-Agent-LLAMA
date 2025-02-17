@@ -9,6 +9,11 @@ from .state import SelfImprovementState, Step
 class SessionManager:
     def __init__(self, session_file: str = 'session.json'):
         self.session_file = session_file
+
+        self.db_name = 'flexi_sessions'
+        self.user = ''
+        self.password = ''
+
         self.state: Optional[SelfImprovementState] = None
         if os.path.exists(self.session_file):
             restore = input(
@@ -59,3 +64,48 @@ class SessionManager:
     def list_sessions(self, directory: str = '.') -> list:
         """List all available session files in a directory."""
         return [f for f in os.listdir(directory) if f.endswith('.json')]
+
+    def save_session_database(self, data):
+        """Save the session to the MySQL database"""
+        conn = mysql.connector.connect(
+            host=self.user,
+            database=self.db_name,
+            user=self.user,
+            password=self.password
+        )
+        cursor = conn.cursor()
+
+        query = 'INSERT INTO sessions (data) VALUES (%s)'
+        try:
+            cursor.execute(query, (json.dumps(data),))
+            conn.commit()
+        except mysql.connector.Error as err:
+            print(f"Error: {err}")
+            return False
+
+        conn.close()
+        return True
+
+    def load_session_database(self):
+        """Load the session from the MySQL database"""
+        conn = mysql.connector.connect(
+            host=self.user,
+            database=self.db_name,
+            user=self.user,
+            password=self.password
+        )
+        cursor = conn.cursor()
+
+        query = 'SELECT data FROM sessions ORDER BY id DESC LIMIT 1'
+        try:
+            cursor.execute(query)
+            row = cursor.fetchone()
+            if row:
+                return json.loads(row[0])
+            else:
+                return None
+        except mysql.connector.Error as err:
+            print(f"Error: {err}")
+            return None
+
+        conn.close()

@@ -17,11 +17,14 @@ from prompt_toolkit.styles import Style
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.patch_stdout import patch_stdout
 
+from Bot.build.code.gui.gui_application import GUIApplication
 from Bot.build.code.cli.next.control import execute_commands
+from Bot.build.code.llm.llm_client import infer
+from Bot.build.code.llm.workflows import accomplished_request, decide_execution
 from Bot.build.code.session.config import ensure_build_directories
 from Bot.build.code.session.constants import (
-    config, ai_errors_path, error_file, gen_ai_path)
-from Bot.build.code.llm.prompts import load_message_template, process_user_messages_with_model, code_corpus, add_context_to_messages, read_file_content, get_message_context_summary
+    config)
+from Bot.build.code.llm.prompts import process_user_messages_with_model, get_message_context_summary
 from Bot.build.code.cli.cli_helpers import FilePathCompleter, CLICompleter
 from Bot.build.code.session.session_management import SessionManager
 
@@ -143,7 +146,7 @@ class CLIApplication(UserRequests, AIRequests, CLIRequests):
     #     # Reset the stop_event for future use
     #     self.stop_event.clear()
 
-    async def send_and_store_message(self, messages: List[Dict[str, str]], speak_back: bool = False) -> str:
+    async def send_and_store_message(self, messages: List[Dict[str, str]], speak_back: bool = False, send_type='') -> str:
         """
         Sends messages to the LLM, stores the conversation in messages_context,
         and returns the assistant's response.
@@ -153,13 +156,24 @@ class CLIApplication(UserRequests, AIRequests, CLIRequests):
             speak_back (bool): Whether to read the assistant's response via TTS.
         """
         try:
-            response = await process_user_messages_with_model(messages)
-            # Append user messages
-            for message in messages:
-                self.messages_context.append(message)
+            if send_type == '':
+                response = await process_user_messages_with_model(messages)
+            elif send_type == 'decide':
+                response = await decide_execution(messages)
+            elif send_type == 'check':
+                response = await accomplished_request(messages)
+            else:
+                response = await infer(messages)
+
+            # Append user message
+            self.messages_context.append(messages[-1])
+
             # Append assistant response
             self.messages_context.append(
                 {'role': 'assistant', 'content': response})
+            
+            # print(len(self.messages_context))
+            # input("len(self.messages_context)")
             # Conditionally speak the assistant's response
             # if speak_back:
             #     await self.speak(response)
@@ -192,6 +206,9 @@ class CLIApplication(UserRequests, AIRequests, CLIRequests):
             #     else:
             #         await self.speak("Voice command listener is not running.")
             
+            elif user_input.startswith("agent"):
+               await self.process_agent_request(user_input)
+
             elif user_input.startswith("flex"):
                await self.process_flex_request(user_input)
 
@@ -360,6 +377,12 @@ class CLIApplication(UserRequests, AIRequests, CLIRequests):
 
 async def main():
     cli_app = CLIApplication()
+
+    # Create the GUI object:
+    gui_app = GUIApplication()
+
+    # Start the GUI in its own thread:
+    gui_app.run()
 
     # Create a shutdown event
     shutdown_event = asyncio.Event()

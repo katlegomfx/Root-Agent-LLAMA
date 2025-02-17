@@ -18,7 +18,7 @@ from Bot.build.code.session.constants import (
 
 def write_content_to_file(content: str, path: str) -> None:
     """Writes the given content to a file at the specified path."""
-    with open(path, 'w') as f:
+    with open(path, 'w', encoding='utf-8') as f:
         f.write(content)
 
 def get_next_filename_index(directory: str, prefix: str) -> int:

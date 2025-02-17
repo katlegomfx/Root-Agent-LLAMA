@@ -1,4 +1,5 @@
 # Bot\build\code\llm\llm_client.py
+from colorama import Fore, Style
 import ollama
 import time
 import json
@@ -10,6 +11,7 @@ from typing import List, Dict, Any
 from ollama import AsyncClient
 from huggingface_hub import hf_hub_download
 
+from Bot.build.code.cli.cli_helpers import colored_print, strip_model_escapes
 from Bot.build.code.io_utils import get_next_filename_index, write_content_to_file
 
 from Bot.build.code.tasks.base_execute import execute_tool
@@ -18,60 +20,115 @@ from Bot.build.code.llm.extract import extract_code
 from Bot.build.code.session.constants import (
     code_prefix,
     assistant_prefix,
-    summary_prefix,
     ai_code_path,
-    ai_results_path,
-    ai_history_path,
     ai_errors_path,
-    ai_summaries_path,
-    binary_answer,
+    ai_results_path,
     anonymised, error_file,
-    triple_backticks,
-    md_heading,
     gen_ai_path,
     MODELS_PATH,
-    model_map
+    model_map,
 )
 
 
-async def inference(messages: List[Dict[str, str]], model_id: str = 'DeepBabySeek') -> str:
+
+
+
+def inferencing(messages: List[Dict[str, str]], model_id: str = 'DeepBabySeek') -> str:
     if model_id not in ollama.list()['models']:
         model_info, model_basename = model_map[model_id]
         model_path = hf_hub_download(
             repo_id=model_info,
             filename=model_basename,
-            resume_download=True,
             cache_dir=MODELS_PATH,
         )
+        print(model_id)
+        print(model_path)
+        input("model_path")
 
         modelfile = f'''
 FROM {model_path}
+# set the temperature to 1 [higher is more creative, lower is more coherent]
+PARAMETER temperature 2
 '''
 
         ollama.create(model=model_id, modelfile=modelfile)
 
-    assistant_response = ''
-    client = AsyncClient()
-    response_generator = await client.chat(model=model_id, messages=messages, stream=True)
-    async for part in response_generator:
-        section = part['message']['content']
-        print(section, end='', flush=True)
-        assistant_response += section
+    # assistant_response = ''
+    # # Directly iterate over the async iterator returned by AsyncClient().chat(...)
+    # client = AsyncClient()
+    # response_generator = await client.chat(model=model_id, messages=messages, stream=True)
+    # async for part in response_generator:
+    #     section = part['message']['content']
+    #     print(section, end='', flush=True)
+    #     assistant_response += section
+    # print()
+    # return assistant_response
+
+    stream = ollama.chat(
+        model=model_id,
+        messages=messages,
+        stream=True,
+    )
+
+    response = ''
+
+    for chunk in stream:
+        text = chunk['message']['content']
+        print(text, end='', flush=True)
+        response += text
+
     print()
-    return assistant_response
+    return response
+
+# print(inference('code', 'How to do ML in python?'))
+
 
 async def chat(messages: List[Dict[str, str]], model: str = 'llama3.2') -> str:
-    """Sends a list of messages to the AsyncClient and streams the assistant response."""
+    """
+    Sends a list of messages to the AsyncClient and streams the assistant response.
+    Conditionally prints the assistant output in color if in a TTY.
+    """
+    print(f"#"*75)
     assistant_response = ''
-    # Directly iterate over the async iterator returned by AsyncClient().chat(...)
     client = AsyncClient()
     response_generator = await client.chat(model=model, messages=messages, stream=True)
     async for part in response_generator:
         section = part['message']['content']
-        print(section, end='', flush=True)
+        section_clean = strip_model_escapes(section)
+        colored_print(section_clean, color=Fore.YELLOW, end='', flush=True)
         assistant_response += section
     print()
     return assistant_response
+
+
+async def infer(messages: List[Dict[str, str]], model: str = 'llama3.2'):
+    start_time = time.time()
+    response = await chat(messages)
+    time_taken = time.time() - start_time
+
+    # Get current timestamp in two formats:
+    # One for the top of the markdown, and one for the filename.
+    timestamp_md = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    timestamp_file = datetime.now().strftime('%Y%m%d%H%M%S')
+
+    # Build Markdown content
+    md_content = f"# {timestamp_md}\n\n"  # Time at the top as a heading
+    md_content += "## Request Info\n\n"
+    md_content += "### Input\n"
+    md_content += f"**Instructions:** {messages[0]['content']}\n\n"
+    md_content += f"**Prompt:** {messages[-1]['content']}\n\n"
+    md_content += "### Output\n"
+    md_content += f"{response}\n\n"
+    md_content += "### Processing\n"
+    md_content += f"Time taken: {time_taken:.2f} seconds\n"
+
+    # Determine file name and write the Markdown content
+    number_of_files = get_next_filename_index(
+        ai_results_path, assistant_prefix)
+    file_path = os.path.join(gen_ai_path, ai_results_path, f'{
+                             assistant_prefix}_{timestamp_file}.md')
+    write_content_to_file(md_content, file_path)
+
 
 def see(messages: List[Dict[str, Any]]) -> str:
     # messages = [{
@@ -92,6 +149,7 @@ def see(messages: List[Dict[str, Any]]) -> str:
     print()
     return response
 
+
 async def process_user_messages_with_model(messages: List[Dict[str, str]], tool_use: bool = False, execute: bool = False, model: str = 'llama3.2') -> str:
     """
     Processes user messages with the Ollama model. Depending on the parameters, it may extract code blocks 
@@ -106,9 +164,7 @@ async def process_user_messages_with_model(messages: List[Dict[str, str]], tool_
         str
     """
     try:
-        start_time = time.time()
-        assistant_response = await chat(messages, model)
-        time_taken = time.time() - start_time
+        assistant_response = await infer(messages, model)
 
         executions = []
 
@@ -157,7 +213,7 @@ async def process_user_messages_with_model(messages: List[Dict[str, str]], tool_
                             }
                             messages.append(correction_prompt)
                             # Then call the model again
-                            corrected_response = await chat(messages)
+                            corrected_response = await infer(messages)
                         executions.append(result)
 
                         evaluation_prompt = {
@@ -165,7 +221,7 @@ async def process_user_messages_with_model(messages: List[Dict[str, str]], tool_
                             'content': "Self-evaluation: Is this final answer correct or does it need further correction?"
                         }
                         messages.append(evaluation_prompt)
-                        evaluation_result = await chat(messages)
+                        evaluation_result = await infer(messages)
 
                         # If the agent says it's correct, proceed.
                         # If not, let it fix itself or disclaim the limitation.
@@ -214,48 +270,6 @@ async def process_user_messages_with_model(messages: List[Dict[str, str]], tool_
             for code in javascript_codes:
                 number_of_files = get_next_filename_index(
                     os.path.join(ai_code_path, 'nextjs'), ".js")
-
-        request_info = {
-            'input': {
-                'instructions': messages[0]['content'],
-                'prompt': messages[-1]['content']
-            },
-            'output': {
-                'response': assistant_response,
-                
-            },
-            'processing': {
-                'time_taken': time_taken,
-
-            }
-        }
-
-        if py_codes != []:
-            request_info['output']['code'] = py_codes,
-        
-        if tsx_codes != []:
-            request_info['output']['code'] = tsx_codes,
-        if ts_codes != []:
-            request_info['output']['code'] = ts_codes,
-        if jsx_codes != []:
-            request_info['output']['code'] = jsx_codes,
-        if js_codes != []:
-            request_info['output']['code'] = js_codes,
-
-        if executions != []:
-            request_info['processing']['executions'] = executions
-            assistant_response += "\n".join(executions)
-
-        json_request_info = json.dumps(request_info, indent=4)
-        # input(f"\n\nContinue\n\n{json.loads(json.dumps(
-        #     request_info, indent=4))}\n\nContinue\n\n")
-
-        number_of_files = get_next_filename_index(
-            ai_results_path, assistant_prefix)
-        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-        write_content_to_file(json_request_info, os.path.join(gen_ai_path,
-                                                              ai_results_path, f'{assistant_prefix}_{timestamp}.json'))
-
         return assistant_response
 
     except Exception as e:

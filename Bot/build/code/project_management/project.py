@@ -1,21 +1,12 @@
 # Bot\build\code\project_management\project.py
 import os
 import json
-from Bot.build.code.llm.prompts import chat, extract_ordered_list_with_details, load_message_template, add_context_to_messages,
+from Bot.build.code.llm.llm_client import infer
+from Bot.build.code.llm.prompts import extract_ordered_list_with_details, load_message_template, add_context_to_messages
 from Bot.build.code.session.constants import (
     code_prefix,
-    assistant_prefix,
-    summary_prefix,
     ai_code_path,
-    ai_results_path,
-    ai_history_path,
-    ai_errors_path,
-    ai_summaries_path,
     binary_answer,
-    anonymised, error_file,
-    triple_backticks,
-    md_heading,
-    gen_ai_path
 )
 from Bot.build.code.io_utils import get_next_filename_index, write_content_to_file
 from Bot.build.code.llm.extract import extract_code
@@ -55,15 +46,17 @@ Name the project.
     name_project_convo.append(
         {'role': 'user', 'content': project_name_prompt}
     )
-    result = await chat(name_project_convo)
+    result = await infer(name_project_convo)
 
     codes = extract_code(result)
     number_of_files = get_next_filename_index(ai_code_path, code_prefix)
     for code in codes:
-        ### try to execute the python code if not retry        code_exec = exec(code)
+        ### try to execute the python code if not retry        
+        code_exec = exec(code)
         if code_exec != "":
 
-            ### if execution worked            write_content_to_file(code, os.path.join(
+            # if execution worked            
+            write_content_to_file(code, os.path.join(
                 ai_code_path, f'{code_prefix}{number_of_files}.py'))
             projects = load_project_data()
             task_name = code_exec
@@ -74,7 +67,7 @@ Name the project.
             if retries < (10/2):
                 return name_project(user_input, retries=retries+1)
             else:
-                ### input(colored('\nPlease try again?', 'red', attrs=[                ### "bold", "underline", "blink"]))                return name_project(user_input, retries=retries+1)
+                return name_project(user_input, retries=retries+1)
 
 async def create_project_steps(project_name, project_goal, retries=0):
     projects = load_project_data()
@@ -91,9 +84,9 @@ Create a numbered list steps to complete the project goal: {project_goal}
     steps_project_convo.append({
         'role': 'user', 'content': project_steps_prompt
     })
-    response = await chat(steps_project_convo)
+    response = await infer(steps_project_convo)
 
-    correctness_prompt_messages = load_message_template(sys_type='base')
+    correctness_prompt_messages = load_message_template(sys_type='general')
     correctness_prompt = f"""Given the following prompt:
 {project_steps_prompt}
 Given the following response:
@@ -105,7 +98,7 @@ Is the above list of steps sufficent?
     correctness_prompt_messages.append({
         'role': 'user', 'content': correctness_prompt
     })
-    correctness_response = await chat(correctness_prompt)
+    correctness_response = await infer(correctness_prompt)
 
     if "yes" in correctness_response.lower():
         to_list_reponse = extract_ordered_list_with_details(response)
@@ -117,7 +110,7 @@ Is the above list of steps sufficent?
         if retries < (10/2):
             return create_project_steps(project_name, project_goal, retries=retries+1)
         else:
-            ### input(colored('\nPlease try again?', 'red', attrs=[            ### "bold", "underline", "blink"]))            return create_project_steps(project_name, project_goal, retries=retries+1)
+            return create_project_steps(project_name, project_goal, retries=retries+1)
 
 async def create_step_tasks(project_name, project_goal, project_step, retries=0):
     projects = load_project_data()
@@ -132,9 +125,9 @@ Create a numbered list tasks to complete the following project step: {data_step}
     tasks_step_convo.append({
         'role': 'user', 'content': step_tasks_prompt
     })
-    response = await chat(tasks_step_convo)
+    response = await infer(tasks_step_convo)
 
-    correctness_prompt_messages = load_message_template(sys_type='base')
+    correctness_prompt_messages = load_message_template(sys_type='general')
     correctness_prompt = f"""Given the following prompt:
 {step_tasks_prompt}
 Given the following response:
@@ -146,7 +139,7 @@ Is the above list of tasks sufficent?
     correctness_prompt_messages.append({
         'role': 'user', 'content': correctness_prompt
     })
-    correctness_response = await chat(correctness_prompt)
+    correctness_response = await infer(correctness_prompt)
     if "yes" in correctness_response.lower():
         to_list_reponse = extract_ordered_list_with_details(response, "Task")
         data_step['tasks'] = to_list_reponse
@@ -157,7 +150,7 @@ Is the above list of tasks sufficent?
         if retries < (10/2):
             return create_step_tasks(project_name, project_goal, project_step, retries=retries+1)
         else:
-            ### input(colored('\nPlease try again?', 'red', attrs=[            ### "bold", "underline", "blink"]))            return create_step_tasks(project_name, project_goal, project_step, retries=retries+1)
+            return create_step_tasks(project_name, project_goal, project_step, retries=retries+1)
 
 async def create_task_process(project_name, project_goal, project_step, project_task, retries=0):
     projects = load_project_data()
@@ -175,7 +168,7 @@ Describe actions in python code or shell code to complete the following project 
         'role': 'user', 'content': task_process_prompt
     })
 
-    process_response = await chat(process_task_convo)
+    process_response = await infer(process_task_convo)
 
     if process_response[1] in ["python", "sh", "json tool"]:
         if process_response[0]['result'][0][0] == True:
@@ -189,7 +182,7 @@ Describe actions in python code or shell code to complete the following project 
                 return create_task_process(project_name, project_goal,
                                            project_step, project_task, retries=retries+1)
             else:
-                ### input(colored('\nPlease try again?', 'red', attrs=[                ###     "bold", "underline", "blink"]))                return create_task_process(project_name, project_goal,
+                return create_task_process(project_name, project_goal,
                                            project_step, project_task, retries=retries+1)
 
     elif process_response[1] == "text":
@@ -203,7 +196,7 @@ Describe actions in python code or shell code to complete the following project 
             return create_task_process(project_name, project_goal,
                                        project_step, project_task, retries=retries+1)
         else:
-            ### input(colored('\nPlease try again?', 'red', attrs=[            ### "bold", "underline", "blink"]))            return create_task_process(project_name, project_goal,
+            return create_task_process(project_name, project_goal,
                                        project_step, project_task, retries=retries+1)
 
 def doLive(goal):

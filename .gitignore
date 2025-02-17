@@ -10,7 +10,7 @@ pyds
 base.py
 ./*_gen_ai
 12_01_25_gen_ai
-
+./models
 idea/
 prompts
 __pycache__
@@ -39,3 +39,13 @@ similar_code_report.md
 orCode.py
 copy_to_idea.py
 checkImageSystem.py
+models/llms/models--unsloth--DeepSeek-R1-Distill-Qwen-1.5B-GGUF/blobs/af3a3fc64d7d0b18f15f28feabad5718d620dc5626a5c1eabad33ddc2b5d09a9
+models/llms/models--unsloth--DeepSeek-R1-Distill-Qwen-1.5B-GGUF/refs/main
+models/llms/models--unsloth--DeepSeek-R1-Distill-Qwen-1.5B-GGUF/snapshots/9784122b3247cc074b19c42bf38ee256d8aacce7/DeepSeek-R1-Distill-Qwen-1.5B-Q8_0.gguf
+
+models
+
+results
+Flexi
+request
+

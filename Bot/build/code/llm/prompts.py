@@ -5,32 +5,153 @@ import shutil
 from datetime import datetime
 from typing import List, Dict, Any
 
+from colorama import Fore
 from ollama import AsyncClient
 
-from Bot.build.code.llm.llm_client import chat, process_user_messages_with_model
-from Bot.build.code.tasks.run_commands import execute_bash_command, fetch_url_content
+from Bot.build.code.cli.cli_helpers import colored_print
+from Bot.build.code.llm.llm_client import infer, process_user_messages_with_model
 
 from Bot.build.code.session.constants import (
-    code_prefix,
     assistant_prefix,
     summary_prefix,
-    ai_code_path,
     ai_results_path,
     ai_history_path,
-    ai_errors_path,
     ai_summaries_path,
-    binary_answer,
-    anonymised, error_file,
-    triple_backticks, 
+    triple_backticks,
     md_heading,
     gen_ai_path
 )
 
 from Bot.build.code.tasks.base_execute import tool_registry
 
-def load_message_template(sys_type: str = 'base', summary:str = '') -> List[Dict[str, Any]]:
+import ast
+
+
+def get_imports(file_path):
+    """Extracts imported functions and classes from a Python file.
+
+    Args:
+        file_path (str): Path to the Python file to analyze.
+
+    Returns:
+        list of dict: Each dict contains 'module', 'name', 'alias', and 'level'.
+            'module' is the module name from which the item is imported.
+            'name' is the name of the imported function or class.
+            'alias' is the alias used, if any (None otherwise).
+            'level' indicates the relative import level (0 for absolute).
+
+    Raises:
+        ValueError: If there is a syntax error in the file.
+        IOError: If the file cannot be read.
+    """
+    try:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            content = file.read()
+    except IOError as e:
+        raise IOError(f"Error reading file {file_path}: {e}") from e
+
+    try:
+        tree = ast.parse(content, filename=file_path)
+    except SyntaxError as e:
+        raise ValueError(f"Syntax error in file {file_path}: {e}") from e
+
+    imports = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom):
+            module = node.module
+            level = node.level
+            for alias in node.names:
+                if alias.name == '*':
+                    continue  # Skip star imports
+                imports.append({
+                    'module': module,
+                    'name': alias.name,
+                    'alias': alias.asname,
+                    'level': level,
+                })
+    return imports
+
+
+def load_message_template(sys_type: str = 'base', summary: str = '') -> List[Dict[str, Any]]:
     if sys_type .lower() == "base":
-        
+        message = [
+            {
+                'role': 'system',
+                'content': f"""
+{md_heading} You are Flexi, an advanced AI agent capable of reflection and tool usage.
+{md_heading} You must handle user requests by reasoning step by step:
+{md_heading} 1) Understand the user request.
+{md_heading} 2) Choose if you will use a tool or python.
+{md_heading} 3) Respond with your choice in a JSON object wrapped in triple backticks.
+{md_heading}{md_heading} Usage:
+- Provide a **JSON** response wrapped in triple backticks and JSON specified as the language (start response with ```json)
+- The response should contain the name of the executor to use (python or tool)
+- Schema Example:
+    {triple_backticks}json
+    {{
+        use: <name>
+    }}
+    {triple_backticks}
+- Example 1:
+    {triple_backticks}json
+    {{
+        use: tool
+    }}
+    {triple_backticks}
+- Example 2:
+    {triple_backticks}json
+    {{
+        use: python
+    }}
+    {triple_backticks}
+{md_heading} Avaliable Tools:
+{md_heading}{md_heading} Name:
+[
+    {", \n".join(toolname for toolname,
+                    toolfunction in tool_registry.items())}
+]
+{md_heading}{md_heading} Doc:
+[
+    {"\n".join(toolfunction.__doc__ for toolname,
+                        toolfunction in tool_registry.items())}
+]
+"""}]
+
+    if sys_type .lower() == "check":
+        message = [
+            {
+                'role': 'system',
+                'content': f"""
+{md_heading} You are Flexi, an advanced AI agent capable of reflection and tool usage.
+{md_heading} You must handle user requests by reasoning step by step:
+{md_heading} 1) Understand the user request.
+{md_heading} 2) Decide if the users request was achieved.
+{md_heading} 3) Respond with your choice in a JSON object wrapped in triple backticks.
+{md_heading}{md_heading} Usage:
+- Provide a **JSON** response wrapped in triple backticks and JSON specified as the language (start response with ```json)
+- The response should contain yes or no based on the context provided
+- Schema Example:
+    {triple_backticks}json
+    {{
+        use: <answer>
+    }}
+    {triple_backticks}
+- Example 1:
+    {triple_backticks}json
+    {{
+        use: yes
+    }}
+    {triple_backticks}
+- Example 2:
+    {triple_backticks}json
+    {{
+        use: no
+    }}
+    {triple_backticks}
+"""}]
+
+    elif sys_type .lower() == "general":
+
         message = [
             {
                 'role': 'system',
@@ -46,9 +167,10 @@ def load_message_template(sys_type: str = 'base', summary:str = '') -> List[Dict
 
     elif sys_type == "bot":
         message = [
-            {'role': 'system', 'content': '# You are a super helpful assistant that helps uses an in an AI to comeplete the user request'}
+            {'role': 'system', 'content': f'{
+                md_heading} You are a super helpful assistant that helps users complete the request using AI'}
         ]
-    
+
     elif sys_type == "tool":
         hard_coded = f"""{md_heading} You are Flexi, an advanced AI agent capable of reflection and tool usage.
 {md_heading} You must handle user requests by reasoning step by step:
@@ -57,9 +179,9 @@ def load_message_template(sys_type: str = 'base', summary:str = '') -> List[Dict
 {md_heading} 3) If the tool fails, reflect on the error message, correct the tool parameters, and try again.
 {md_heading} 4) Provide the final result or an explanation to the user.
 {md_heading} You maintain memory of the conversation and can self-critique or revise your approach if needed.
-{md_heading} You specalise in tool use requiring json output to execute.
+{md_heading} You specialize in tool use requiring JSON output to execute.
 {md_heading} You are able to help the user with anything.
-{md_heading} You will use the avaliable tools"""
+{md_heading} You will use the available tools"""
         hard_coded += f"""
 {md_heading} Avaliable Tool:
 {md_heading}{md_heading} Name:
@@ -86,47 +208,54 @@ def load_message_template(sys_type: str = 'base', summary:str = '') -> List[Dict
         base_tool_messages = [
             {"role": 'system', "content": hard_coded}
         ]
-
         message = base_tool_messages
 
     elif sys_type == "work":
         message = [
-            {'role': 'system', 'content': '# You are a super helpful assistant'}
+            {'role': 'system', 'content': f'{
+                md_heading} You are a super helpful assistant'}
         ]
 
     elif sys_type == "projectSteps":
         message = [
-            {'role': 'system', 'content': '# You are a super helpful assistant'}
+            {'role': 'system', 'content': f'{
+                md_heading} You are a super helpful assistant'}
         ]
+    
     elif sys_type == "projectTasks":
         message = [
-            {'role': 'system', 'content': '# You are a super helpful assistant'}
+            {'role': 'system', 'content': f'{
+                md_heading} You are a super helpful assistant'}
         ]
+    
     elif sys_type == "projectProcess":
         message = [
-            {'role': 'system', 'content': '# You are a super helpful assistant'}
+            {'role': 'system', 'content': f'{
+                md_heading} You are a super helpful assistant'}
         ]
 
     elif sys_type == "summary":
         message = [
-            {'role': 'system', 'content': '# You are a personal assistant.\n# You are tasked with extracting important information from given text\n# Only respond with summarised important information!'}
+            {'role': 'system', 'content': f'{md_heading} You are a personal assistant.\n{
+                md_heading} You are tasked with extracting important information from given text\n{md_heading} Only respond with summarised important information!'}
         ]
 
     elif sys_type not in ["tool", ]:
         message = [
             {'role': 'system',
-                'content': f'# You are an expert {sys_type.capitalize()} Developer'}
+                'content': f'{md_heading} You are an expert {sys_type.capitalize()} Developer'}
         ]
 
-    elif  summary != '':
+    elif summary != '':
         message = [{
             'role': 'system',
             'content': f"{message[0]['content']}\n{md_heading}{md_heading}"
         }]
 
     message = add_context_to_messages(message, summary)
-    
+
     return message
+
 
 def extract_ordered_list_with_details(text, typer="Step"):
     items = {}
@@ -138,16 +267,16 @@ def extract_ordered_list_with_details(text, typer="Step"):
     current_code = []
 
     for line in converted_text:
-        ### Check for step/task with numbering        
+        # Check for step/task with numbering
         if (("step" in line.lower() or "task" in line.lower()) and f"{counter}" in line) or f"{counter}." in line:
-            ### Save the previous item if it exists            
+            # Save the previous item if it exists
             if current_item:
                 if current_code:  # If there's a code block being captured, add it before saving the item
                     current_item["details"]["code"] = '\n'.join(current_code)
                     current_code = []
                 items[f"{typer} {counter - 1}"] = current_item
 
-            ### Start a new item            
+            # Start a new item
             base_line = line.replace(f"Step {counter}: ", "").replace(
                 f"{counter}. ", "").strip('**').strip()
             current_item = {"title": base_line,
@@ -155,7 +284,7 @@ def extract_ordered_list_with_details(text, typer="Step"):
 
             counter += 1
 
-        ### Detect the start and end of a code block        
+        # Detect the start and end of a code block
         elif "```" in line:
             if not code_block:  # Start of a code block
                 code_block = True
@@ -170,29 +299,30 @@ def extract_ordered_list_with_details(text, typer="Step"):
                             current_code) + "\n"
                 current_code = []
 
-        ### If inside a code block, capture the code        
+        # If inside a code block, capture the code
         elif code_block:
             current_code.append(line)
 
-        ### If not a step and not in a code block, add to instructions        
+        # If not a step and not in a code block, add to instructions
         elif current_item is not None:
             if current_item["details"]["instructions"]:
                 current_item["details"]["instructions"] += "\n"
             current_item["details"]["instructions"] += line.strip()
 
-    ### Don't forget to add the last item    
+    # Don't forget to add the last item
     if current_item:
         if current_code:  # If there's a code block being captured, add it before saving the item
             if "code" in current_item["details"]:
                 current_item["details"]["code"] += '\n'.join(current_code)
             else:
                 current_item["details"]["code"] = '\n'.join(current_code)
-        ### Only add the code key if it contains code        
+        # Only add the code key if it contains code
         if "code" not in current_item["details"] or not current_item["details"]["code"].strip():
             current_item["details"].pop("code", None)
         items[f"{typer} {counter - 1}"] = current_item
 
     return items
+
 
 async def get_summary_on_files():
     all_summaries = os.listdir(os.path.join(gen_ai_path, ai_summaries_path))
@@ -200,33 +330,32 @@ async def get_summary_on_files():
         assistant_prefix) and f.endswith('.json')]
 
     if len(all_summaries) >= 1 or len(all_history) >= 1:
-        print('Thinking About The Past')
         latest_summary_datetime = '0'
         latest_summary_file = ''
 
-        ### use all_summaries        
+        # use all_summaries
         all_summaries.sort()
         if len(all_summaries) >= 1:
             latest_summary_file = all_summaries[-1]
             latest_summary_datetime = latest_summary_file.split('_')[
                 2].split('.')[0]
 
-        ### use all_history        
+        # use all_history
         if latest_summary_datetime != '0':
-            ### get history after specific date            
+            # get history after specific date
             valid_history_files = [f for f in all_history if f.split(
                 '_')[2].split('.')[0] > latest_summary_datetime]
             valid_history_files.sort()
-            ### get history before specific date           
+            # get history before specific date
             invalid_history_files = [f for f in all_history if f.split(
                 '_')[2].split('.')[0] <= latest_summary_datetime]
             invalid_history_files.sort()
-            ### clean up history before specified date            
+            # clean up history before specified date
             for file in invalid_history_files:
                 shutil.move(os.path.join(gen_ai_path, ai_results_path, file),
                             os.path.join(gen_ai_path, ai_history_path, file))
         else:
-            ### get all history if no specified date            
+            # get all history if no specified date
             valid_history_files = [f for f in all_history]
             valid_history_files.sort()
 
@@ -251,10 +380,10 @@ async def get_summary_on_files():
                     'content': response
                 })
 
-        ### if summary and history exists        
+        # if summary and history exists
         if latest_summary_file != '' and history_data != []:
             print('Consolidating Summaries and History')
-            ### open file and read text            
+            # open file and read text
             with open(os.path.join(gen_ai_path, ai_summaries_path, latest_summary_file), 'r') as f:
                 latest_summary_text = "".join(f.readlines())
             summary_messages = load_message_template(sys_type='summary')
@@ -265,24 +394,24 @@ async def get_summary_on_files():
                     full_text += f"{m['role']}: \n{m['content']}\n\n"
 
             print('Rewriting Summary With New History')
-            ### rewrite summary            
+            # rewrite summary
             summary_messages.append({
                 'role': 'user', 'content': full_text
             })
-            result = await chat(summary_messages)
+            result = await infer(summary_messages)
             timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
             with open(os.path.join(gen_ai_path, ai_summaries_path, f'{summary_prefix}_{timestamp}.txt'), 'w') as f:
                 f.write(result)
 
-        ### if only summary exists        
+        # if only summary exists
         if latest_summary_file != '' and history_data == []:
             print('Consolidating Summary')
-            ### open file and read text            
+            # open file and read text
             with open(os.path.join(gen_ai_path, ai_summaries_path, latest_summary_file), 'r') as f:
                 latest_summary_text = "".join(f.readlines())
             result = latest_summary_text
 
-        ### if only summary exists        
+        # if only summary exists
         if history_data != [] and latest_summary_file == '':
             print('Consolidating Summary')
             full_text = "Chat History:\n\n"
@@ -291,16 +420,17 @@ async def get_summary_on_files():
                     full_text += f"{m['role']}: \n{m['content']}\n\n"
 
             print('Creating New Summary')
-            ### create the new summary            
+            # create the new summary
             summary_messages = load_message_template(sys_type='summary')
             summary_messages.append({
                 'role': 'user', 'content': full_text
             })
-            result = await chat(summary_messages)
+            result = await infer(summary_messages)
 
             timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
             with open(os.path.join(gen_ai_path, ai_summaries_path, f'{summary_prefix}_{timestamp}.txt'), 'w') as f:
                 f.write(result)
+
 
 async def get_message_context_summary(messages_context):
     summary_prompt_messages = load_message_template("summary")
@@ -325,6 +455,7 @@ async def get_message_context_summary(messages_context):
 
     return summary_result
 
+
 def get_py_files_recursive(directory, exclude_dirs=None, exclude_files=None):
     """
     Recursively searches for Python files (.py) in a given directory and its subdirectories,
@@ -343,8 +474,8 @@ def get_py_files_recursive(directory, exclude_dirs=None, exclude_files=None):
     if exclude_files is None:
         exclude_files = []
 
-    ### Note: This line was causing an error because dir[:] = ... does not modify the original dir variable    
-    ### We need to use a new list instead    
+    # Note: This line was causing an error because dir[:] = ... does not modify the original dir variable
+    # We need to use a new list instead
 
     py_files = []
     for root, dirs, files in os.walk(directory):
@@ -354,6 +485,7 @@ def get_py_files_recursive(directory, exclude_dirs=None, exclude_files=None):
                 py_files.append(os.path.join(root, file))
 
     return py_files
+
 
 def code_corpus(path: str):
     """
@@ -381,15 +513,23 @@ def code_corpus(path: str):
         'self_autoCodebase',
         'tests',
         'to_confirm_tools',
-        
+
     ]
     paths = get_py_files_recursive(
         path, exclude_dirs=exclude_dirs, exclude_files=exclude_files)
     current_project_item = []
+    # print(paths)
+
     for file_path in paths:
-        text = read_file_content(file_path)
-        current_project_item.append(f'\n## {file_path}:\n{text}\n')
+        # print(file_path)
+        # input("base_code")
+        try:
+            text = read_file_content(file_path)
+            current_project_item.append(f'\n## {file_path}:\n{text}\n')
+        except Exception as e:
+            colored_print(e, Fore.RED)
     return current_project_item
+
 
 def read_file_content(path: str) -> str:
     """
@@ -401,19 +541,23 @@ def read_file_content(path: str) -> str:
     Returns:
         str: The content of the specified file.
     """
-    with open(path, 'r') as f:
+    try:
         if path.endswith('.md') or path.endswith('.py'):
-            return "".join(f.readlines()).replace('# ', '## ')
+            return "".join(open(path, 'r', encoding='utf-8')).replace('# ', '## ')
         else:
-            return "".join(f.readlines()).replace('# ', '## ')
+            return "".join(open(path, 'r', encoding='utf-8')).replace('# ', '## ')
+    except Exception as e:
+        colored_print(e, Fore.RED)
+
 
 def add_context_to_messages(messages, context):
     for m in messages:
-        if m['role'] == 'system':
-            content = f"{m['content']}\n\n## Summary History\n\n{context}"
+        if m['role'] == 'system' and len(context) > 0:
+            content = f"{m['content']}\n\n{md_heading}{
+                md_heading} Summary History\n\n{context}"
             messages = [{'role': 'system', 'content': content}]
     return messages
-    
+
 
 async def embedText(writtenText, model='nomic-embed-text'):
 
@@ -422,6 +566,6 @@ async def embedText(writtenText, model='nomic-embed-text'):
     response_generator = await client.embed(model='llama3.2', input=writtenText, stream=True)
     async for part in response_generator:
         section = part['message']['content']
-        ### print(section, end='', flush=True)            embedded_response += section
+        # print(section, end='', flush=True)            embedded_response += section
     print()
     return embedded_response
