@@ -51,8 +51,8 @@ class UserRequests:
         """Process generic user input."""
         # Prepend session chat history to the current messages
 
-        messages = load_message_template(
-            sys_type='base', summary=self.summary) + self.messages_context
+        messages = self.messages_context + load_message_template(
+            sys_type='general', summary=self.summary)
         messages.append({'role': 'user', 'content': user_input})
 
         response = await self.send_and_store_message(messages)
@@ -66,8 +66,8 @@ class UserRequests:
         prompt = f"# Considering the following:\n\n{
             base_code}\n\n# {user_request}"
         write_content_to_file(prompt, './prompts/gen/code_prompt.md')
-        code_messages = load_message_template(
-            sys_type='python', summary=self.summary) + self.messages_context
+        code_messages = self.messages_context + load_message_template(
+            sys_type='python', summary=self.summary)
         code_messages.append({'role': 'user', 'content': prompt})
 
         response = await self.send_and_store_message(code_messages)
@@ -83,7 +83,7 @@ class UserRequests:
 
         write_content_to_file(prompt, './prompts/gen/combine_prompt.md')
 
-        code_combine_messages = load_message_template(
+        code_combine_messages = self.messages_context + load_message_template(
             sys_type='python', summary=self.summary)
         # Ensure prompt is appended
         code_combine_messages.append({'role': 'user', 'content': prompt})
@@ -107,8 +107,8 @@ class UserRequests:
 
         write_content_to_file(prompt, './prompts/gen/flex_prompt.md')
 
-        code_flex_messages = load_message_template(
-            sys_type='python', summary=self.summary)
+        code_flex_messages = self.messages_context + \
+            load_message_template(sys_type='python', summary=self.summary)
         code_flex_messages.append({'role': 'user', 'content': prompt})
         response = await self.send_and_store_message(code_flex_messages)
 
@@ -148,10 +148,10 @@ class UserRequests:
 
         base_code = "".join(code_corpus('./Bot'))
         user_request = user_input.replace('self ', '')
-        prompt = f'# Considering the following:\n\n{
+        prompt = f'# Codebase:\n\n{
             base_code}\n\n# {user_request}'
         write_content_to_file(prompt, './prompts/gen/self_prompt.md')
-        code_self_messages = load_message_template(
+        code_self_messages = self.messages_context + load_message_template(
             sys_type='python', summary=self.summary)
         code_self_messages.append({'role': 'user', 'content': prompt})
         response = await self.send_and_store_message(code_self_messages)
@@ -167,8 +167,8 @@ class UserRequests:
         prompt = f"# Considering the following:\n\n{
             base_code}\n\n# What modifications need to be made in order to address the error:\n\n{error_code}"
         write_content_to_file(prompt, './prompts/gen/fix_prompt.md')
-        fix_messages = load_message_template(
-            sys_type='python', summary=self.summary) + self.messages_context
+        fix_messages = self.messages_context + load_message_template(
+            sys_type='python', summary=self.summary)
         fix_messages.append({'role': 'user', 'content': prompt})
 
         response = await self.send_and_store_message(fix_messages)
@@ -178,12 +178,12 @@ class UserRequests:
 
         user_request = user_input.replace('tool ', '')
 
-        messages = load_message_template(
-            sys_type='tool', summary=self.summary) + self.messages_context
+        messages = self.messages_context + load_message_template(
+            sys_type='tool', summary=self.summary)
         messages.append({'role': 'user', 'content': user_request})
 
         # Call LLM to process the message
-        response = await process_user_messages_with_model(messages, tool_use=True, execute=True)
+        response = await tool_use(messages)
 
         # Append to chat history
         self.messages_context.append({'role': 'user', 'content': user_input})
@@ -205,41 +205,44 @@ class UserRequests:
                 base_code}'
 
         write_content_to_file(prompt, './prompts/gen/agent_prompt.md')
-        
+
         responses = []
 
         state = False
         while not state or tries < 5:
             try:
                 colored_print("Deciding using AI", Fore.GREEN)
-                base_prompt = load_message_template('base', self.summary)
-                base_prompt.append({"role":"user", "content": prompt})
+                base_prompt = self.messages_context + \
+                    load_message_template('base', self.summary)
+                base_prompt.append({"role": "user", "content": prompt})
 
                 # print(prompt)
                 # print(len(base_prompt))
                 # print(len([message["content"]
                 #       for message in base_prompt if message["role"] == 'user'][0]))
                 # input("base_prompt")
-      
+
                 ai_choice = await self.send_and_store_message(base_prompt, send_type='decide')
-                
+
                 if ai_choice == "python":
                     colored_print("Starting Python Code Use", Fore.GREEN)
-                    base_prompt = load_message_template('python')
+                    base_prompt = self.messages_context + \
+                        load_message_template('python')
                     base_prompt.append(prompt)
                     final_response, code_script, status_message, base_prompt = await code_use(base_prompt)
                     responses.append(
                         {
-                            'response': final_response, 
-                            'code': code_script, 
-                            'status': status_message, 
+                            'response': final_response,
+                            'code': code_script,
+                            'status': status_message,
                             'request': base_prompt
                         }
                     )
 
                 elif ai_choice == "tool":
                     colored_print("Starting Tool Use", Fore.GREEN)
-                    base_prompt = load_message_template('tool')
+                    base_prompt = self.messages_context + \
+                        load_message_template('tool')
                     base_prompt.append(prompt)
                     base_response, code_script, status_message, base_prompt = await tool_use(base_prompt)
                     responses.append(
@@ -258,7 +261,8 @@ class UserRequests:
                     err_file.write("An unhandled error occurred:")
                     traceback.print_exc(file=err_file)
                 error_text = open("error.log", "r", encoding="utf-8").read()
-                base_prompt = load_message_template('python')
+                base_prompt = self.messages_context + \
+                    load_message_template('python')
                 base_prompt.append({
                     'role': 'user',
                     'content': f"Look at the following error:\n{error_text}\nIn the code:\n{base_code}\nHow can we fix this error"
@@ -270,18 +274,18 @@ class UserRequests:
             finally:
                 colored_print("Checking task was completed", Fore.GREEN)
                 tries += 1
-                check_prompt = load_message_template('check', self.summary)
+                check_prompt = self.messages_context + \
+                    load_message_template('check', self.summary)
                 check_prompt.append(
                     {
                         'role': 'user',
                         'content': responses
                     }
                 )
-                
+
                 print(check_prompt)
                 input("check_prompt")
 
                 ai_choice = await self.send_and_store_message(base_prompt, send_type='check')
                 if 'no' not in ai_choice:
                     state = True
-

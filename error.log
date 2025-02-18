@@ -1,4 +1,0 @@
-An unhandled error occurred:Traceback (most recent call last):
-  File "C:\Users\katle\Desktop\theFlex\lastLast\Bot\build\code\cli\user_requests.py", line 222, in process_agent_request
-    # input("base_prompt")
-EOFError

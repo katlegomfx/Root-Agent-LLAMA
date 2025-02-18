@@ -6,6 +6,8 @@ import speech_recognition as sr
 import pyttsx3
 import asyncio
 import signal
+import os
+import json
 from contextlib import suppress
 
 from typing import List, Dict, Any
@@ -23,7 +25,7 @@ from Bot.build.code.llm.llm_client import infer
 from Bot.build.code.llm.workflows import accomplished_request, decide_execution
 from Bot.build.code.session.config import ensure_build_directories
 from Bot.build.code.session.constants import (
-    config)
+    config, gen_ai_path, ai_history_path)
 from Bot.build.code.llm.prompts import process_user_messages_with_model, get_message_context_summary
 from Bot.build.code.cli.cli_helpers import FilePathCompleter, CLICompleter
 from Bot.build.code.session.session_management import SessionManager
@@ -54,6 +56,7 @@ class CLIApplication(UserRequests, AIRequests, CLIRequests):
 
         self.stop_event = Event()
         self.summary = ''
+        self.history_file = 'history.json'
         self.session_manager = SessionManager('cli_session.json')
 
         self.config = config
@@ -74,7 +77,8 @@ class CLIApplication(UserRequests, AIRequests, CLIRequests):
 
         # Chat history
         self.messages_template: List[Dict[str, str]] = []
-        self.messages_context: List[Dict[str, str]] = []
+
+        self.messages_context: List[Dict[str, str]] = self.load_history()
 
         self.initial_state = {"auto_improve": "Not Started"}
 
@@ -83,7 +87,7 @@ class CLIApplication(UserRequests, AIRequests, CLIRequests):
             "last_tool_name": None,
         }
 
-            # Initialize Speech Recognition and TTS
+        # Initialize Speech Recognition and TTS
         self.recognizer = sr.Recognizer()
         self.microphone = sr.Microphone()
 
@@ -127,7 +131,7 @@ class CLIApplication(UserRequests, AIRequests, CLIRequests):
     #         except sr.RequestError:
     #             await self.speak("Sorry, I'm unable to reach the speech recognition service.")
     #             return ""
-            
+
     # async def voice_command_listener(self):
     #     """Continuously listen for voice commands."""
     #     await self.speak("Voice command listener activated. Say 'hey flexi' to start.")
@@ -156,14 +160,12 @@ class CLIApplication(UserRequests, AIRequests, CLIRequests):
             speak_back (bool): Whether to read the assistant's response via TTS.
         """
         try:
-            if send_type == '':
-                response = await process_user_messages_with_model(messages)
-            elif send_type == 'decide':
+            if send_type == 'decide':
                 response = await decide_execution(messages)
             elif send_type == 'check':
                 response = await accomplished_request(messages)
             else:
-                response = await infer(messages)
+                response = await process_user_messages_with_model(messages)
 
             # Append user message
             self.messages_context.append(messages[-1])
@@ -171,12 +173,13 @@ class CLIApplication(UserRequests, AIRequests, CLIRequests):
             # Append assistant response
             self.messages_context.append(
                 {'role': 'assistant', 'content': response})
-            
+
             # print(len(self.messages_context))
             # input("len(self.messages_context)")
             # Conditionally speak the assistant's response
             # if speak_back:
             #     await self.speak(response)
+
             await self.trim_context()
             return response
         except Exception as e:
@@ -205,12 +208,12 @@ class CLIApplication(UserRequests, AIRequests, CLIRequests):
             #         await self.speak("Voice command listener deactivated.")
             #     else:
             #         await self.speak("Voice command listener is not running.")
-            
+
             elif user_input.startswith("agent"):
-               await self.process_agent_request(user_input)
+                await self.process_agent_request(user_input)
 
             elif user_input.startswith("flex"):
-               await self.process_flex_request(user_input)
+                await self.process_flex_request(user_input)
 
             elif user_input.startswith("code"):
                 await self.process_code_request(user_input)
@@ -226,7 +229,7 @@ class CLIApplication(UserRequests, AIRequests, CLIRequests):
 
             elif user_input.startswith("fix"):
                 await self.process_fix_request(user_input)
-            
+
             elif user_input.startswith("summarize"):
                 await self.do_summarize(user_input)
 
@@ -270,19 +273,28 @@ class CLIApplication(UserRequests, AIRequests, CLIRequests):
             self.config.write(configfile)
         print(f"Configuration updated: {key} = {value}")
 
-    async def trim_context(self, max_length: int = 28):
-        """Trim the chat context to the last `max_length` interactions."""
+    def load_history(self):
+        if not os.path.exists(os.path.join(gen_ai_path, ai_history_path, self.history_file)):
+            return []
+        with open(os.path.join(gen_ai_path, ai_history_path, self.history_file), 'r', encoding='utf-8') as file:
+            return json.load(file)
 
+    def store_history(self):
+        with open(os.path.join(gen_ai_path, ai_history_path, self.history_file), 'w', encoding='utf-8') as file:
+            json.dump(self.messages_context, file, indent=4, ensure_ascii=False)
+
+    async def trim_context(self, max_length: int = 8):
+        """Trim the chat context to the last `max_length` interactions."""
         # Summarize if too long:
         if len(self.messages_context) > max_length:  # your threshold
-            self.summary = get_message_context_summary(
+            self.summary = await get_message_context_summary(
                 self.messages_context)
 
             # Store embeddings:
             # await store_message_in_vector_db('assistant', assistant_response)
             self.messages_context = self.messages_context[-max_length:]
-        
-        
+
+        self.store_history()
 
     def handle_error(self, error: Exception, context: str = ""):
         """Handle errors gracefully and log debug details."""

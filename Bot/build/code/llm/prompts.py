@@ -26,7 +26,6 @@ from Bot.build.code.tasks.base_execute import tool_registry
 
 import ast
 
-
 def get_imports(file_path):
     """Extracts imported functions and classes from a Python file.
 
@@ -71,9 +70,8 @@ def get_imports(file_path):
                 })
     return imports
 
-
 def load_message_template(sys_type: str = 'base', summary: str = '') -> List[Dict[str, Any]]:
-    if sys_type .lower() == "base":
+    if sys_type == "base":
         message = [
             {
                 'role': 'system',
@@ -117,7 +115,7 @@ def load_message_template(sys_type: str = 'base', summary: str = '') -> List[Dic
 ]
 """}]
 
-    if sys_type .lower() == "check":
+    elif sys_type.lower() == "check":
         message = [
             {
                 'role': 'system',
@@ -150,7 +148,7 @@ def load_message_template(sys_type: str = 'base', summary: str = '') -> List[Dic
     {triple_backticks}
 """}]
 
-    elif sys_type .lower() == "general":
+    elif sys_type.lower() == "general":
 
         message = [
             {
@@ -159,9 +157,7 @@ def load_message_template(sys_type: str = 'base', summary: str = '') -> List[Dic
 {md_heading} You are Flexi, an advanced AI agent capable of reflection and tool usage.
 {md_heading} You must handle user requests by reasoning step by step:
 {md_heading} 1) Understand the user request.
-{md_heading} 2) If a tool is needed, produce a JSON instruction for that tool (in triple backticks).
-{md_heading} 3) If the tool fails, reflect on the error message, correct the tool parameters, and try again.
-{md_heading} 4) Provide the final result or an explanation to the user.
+{md_heading} 2) Provide the final result or an explanation to the user.
 {md_heading} You maintain memory of the conversation and can self-critique or revise your approach if needed.
 """}]
 
@@ -246,16 +242,9 @@ def load_message_template(sys_type: str = 'base', summary: str = '') -> List[Dic
                 'content': f'{md_heading} You are an expert {sys_type.capitalize()} Developer'}
         ]
 
-    elif summary != '':
-        message = [{
-            'role': 'system',
-            'content': f"{message[0]['content']}\n{md_heading}{md_heading}"
-        }]
-
     message = add_context_to_messages(message, summary)
 
     return message
-
 
 def extract_ordered_list_with_details(text, typer="Step"):
     items = {}
@@ -322,7 +311,6 @@ def extract_ordered_list_with_details(text, typer="Step"):
         items[f"{typer} {counter - 1}"] = current_item
 
     return items
-
 
 async def get_summary_on_files():
     all_summaries = os.listdir(os.path.join(gen_ai_path, ai_summaries_path))
@@ -431,7 +419,6 @@ async def get_summary_on_files():
             with open(os.path.join(gen_ai_path, ai_summaries_path, f'{summary_prefix}_{timestamp}.txt'), 'w') as f:
                 f.write(result)
 
-
 async def get_message_context_summary(messages_context):
     summary_prompt_messages = load_message_template("summary")
     full_text = ""
@@ -454,7 +441,6 @@ async def get_message_context_summary(messages_context):
         f.write(summary_result)
 
     return summary_result
-
 
 def get_py_files_recursive(directory, exclude_dirs=None, exclude_files=None):
     """
@@ -485,7 +471,6 @@ def get_py_files_recursive(directory, exclude_dirs=None, exclude_files=None):
                 py_files.append(os.path.join(root, file))
 
     return py_files
-
 
 def code_corpus(path: str):
     """
@@ -530,7 +515,6 @@ def code_corpus(path: str):
             colored_print(e, Fore.RED)
     return current_project_item
 
-
 def read_file_content(path: str) -> str:
     """
     Reads and returns the entire content of a given file.
@@ -549,7 +533,6 @@ def read_file_content(path: str) -> str:
     except Exception as e:
         colored_print(e, Fore.RED)
 
-
 def add_context_to_messages(messages, context):
     for m in messages:
         if m['role'] == 'system' and len(context) > 0:
@@ -557,7 +540,6 @@ def add_context_to_messages(messages, context):
                 md_heading} Summary History\n\n{context}"
             messages = [{'role': 'system', 'content': content}]
     return messages
-
 
 async def embedText(writtenText, model='nomic-embed-text'):
 

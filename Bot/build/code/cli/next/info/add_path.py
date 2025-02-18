@@ -34,7 +34,7 @@ def prepend_file_location_check(directory, extensions, files_to_keep=None, ignor
                 comment_str = f"# {relative_path}"
 
                 try:
-                    with open(file_path, 'r+') as f:
+                    with open(file_path, 'r+', encoding='utf-8') as f:
 
                         first_line = f.readline()
                         modified_first_line = first_line.replace('\n', '')

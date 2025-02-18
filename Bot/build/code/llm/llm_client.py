@@ -29,10 +29,6 @@ from Bot.build.code.session.constants import (
     model_map,
 )
 
-
-
-
-
 def inferencing(messages: List[Dict[str, str]], model_id: str = 'DeepBabySeek') -> str:
     if model_id not in ollama.list()['models']:
         model_info, model_basename = model_map[model_id]
@@ -82,7 +78,6 @@ PARAMETER temperature 2
 
 # print(inference('code', 'How to do ML in python?'))
 
-
 async def chat(messages: List[Dict[str, str]], model: str = 'llama3.2') -> str:
     """
     Sends a list of messages to the AsyncClient and streams the assistant response.
@@ -100,8 +95,11 @@ async def chat(messages: List[Dict[str, str]], model: str = 'llama3.2') -> str:
     print()
     return assistant_response
 
-
 async def infer(messages: List[Dict[str, str]], model: str = 'llama3.2'):
+    # print(messages[-2]['content'])
+    # print(len(messages[-2]['content']))
+    # input("messages")
+
     start_time = time.time()
     response = await chat(messages)
     time_taken = time.time() - start_time
@@ -112,23 +110,22 @@ async def infer(messages: List[Dict[str, str]], model: str = 'llama3.2'):
     timestamp_file = datetime.now().strftime('%Y%m%d%H%M%S')
 
     # Build Markdown content
-    md_content = f"# {timestamp_md}\n\n"  # Time at the top as a heading
-    md_content += "## Request Info\n\n"
-    md_content += "### Input\n"
-    md_content += f"**Instructions:** {messages[0]['content']}\n\n"
-    md_content += f"**Prompt:** {messages[-1]['content']}\n\n"
-    md_content += "### Output\n"
+    md_content = f"# Time taken:\n"
+    md_content += f"{time_taken:.2f} seconds\n\n"
+    md_content += "# Output\n"
     md_content += f"{response}\n\n"
-    md_content += "### Processing\n"
-    md_content += f"Time taken: {time_taken:.2f} seconds\n"
+    md_content += "# Input\n"
+    md_content += f"## Instructions: {messages[-2]['content'].replace('# ', '## ')}\n"
+    md_content += f"## Prompt: {messages[-1]
+                                ['content'].replace('# ', '## ')}\n\n"
 
     # Determine file name and write the Markdown content
     number_of_files = get_next_filename_index(
         ai_results_path, assistant_prefix)
-    file_path = os.path.join(gen_ai_path, ai_results_path, f'{
-                             assistant_prefix}_{timestamp_file}.md')
+    file_path = os.path.join(gen_ai_path, ai_results_path, f'{assistant_prefix}_{timestamp_file}.md')
     write_content_to_file(md_content, file_path)
 
+    return response
 
 def see(messages: List[Dict[str, Any]]) -> str:
     # messages = [{
@@ -149,7 +146,6 @@ def see(messages: List[Dict[str, Any]]) -> str:
     print()
     return response
 
-
 async def process_user_messages_with_model(messages: List[Dict[str, str]], tool_use: bool = False, execute: bool = False, model: str = 'llama3.2') -> str:
     """
     Processes user messages with the Ollama model. Depending on the parameters, it may extract code blocks 
@@ -166,110 +162,14 @@ async def process_user_messages_with_model(messages: List[Dict[str, str]], tool_
     try:
         assistant_response = await infer(messages, model)
 
-        executions = []
-
-        py_codes = []
-
-        tsx_codes = []
-        ts_codes = []
-        jsx_codes = []
-        js_codes = []
-
-        if tool_use:
-            tool_codes = extract_code(assistant_response, language='json')
-
-            if len(tool_codes) == 0:
-                tool_codes = extract_code(assistant_response, language='bash')
-            # executions =  []
-            for code in tool_codes:
-                json_instruct = json.loads(code)
-                # print(json.dumps(json_instruct, indent=4))
-
-                if execute:
-                    confirm = input(
-                        f"Are you sure you want to execute the tool? (y/n): ")
-                    while confirm.lower() not in ['y', 'n']:
-                        confirm = input("Please enter y or n: ")
-
-                    if confirm.lower() == 'y':
-                        # Execute the tool
-                        print(f"Executing tool: {json_instruct}")
-                        result = execute_tool(json_instruct)
-                        if not result or "Error" in result:
-                            # Tool failed or returned an error
-                            observation_msg = {
-                                'role': 'system',
-                                'content': f"Tool Execution Failed. Error info: {result}"
-                            }
-                            # Insert the observation into the conversation chain
-                            messages.append(observation_msg)
-                            # Re-run the model with an additional user/system prompt:
-                            correction_prompt = {
-                                'role': 'user',
-                                'content': (
-                                    "The previous tool call failed. Please correct the tool instruction or reason out a fix."
-                                    "If the tool can’t be fixed, provide a final message."
-                                )
-                            }
-                            messages.append(correction_prompt)
-                            # Then call the model again
-                            corrected_response = await infer(messages)
-                        executions.append(result)
-
-                        evaluation_prompt = {
-                            'role': 'system',
-                            'content': "Self-evaluation: Is this final answer correct or does it need further correction?"
-                        }
-                        messages.append(evaluation_prompt)
-                        evaluation_result = await infer(messages)
-
-                        # If the agent says it's correct, proceed.
-                        # If not, let it fix itself or disclaim the limitation.
-
-        else:
-            py_codes = extract_code(assistant_response)
-            for code in py_codes:
-                number_of_files = get_next_filename_index(
-                    ai_code_path, code_prefix)
+        py_codes = extract_code(assistant_response)
+        for code in py_codes:
+            number_of_files = get_next_filename_index(
+                ai_code_path, code_prefix)
                 # Write the code to a file
-                write_content_to_file(code, os.path.join(
+            write_content_to_file(code, os.path.join(
                     gen_ai_path, ai_code_path, f'{code_prefix}{number_of_files}.py'))
-                # Execute the code
-                if execute:
-                    confirm = input(
-                        f"Are you sure you want to execute the code? (y/n): ")
-                    while confirm.lower() not in ['y', 'n']:
-                        confirm = input("Please enter y or n: ")
 
-                    if confirm.lower() == 'y':
-                        # Execute the code
-                        print(f"Executing code: {code}")
-                        result = execute_tool({
-                            'tool': 'execute_bash_command',
-                            'parameters': f"py -c {code}"
-                        })
-                        executions.append(result)
-
-            tsx_codes = extract_code(assistant_response, 'tsx')
-            for code in tsx_codes:
-                number_of_files = get_next_filename_index(
-                    os.path.join(ai_code_path, 'nextjs'), ".tsx")
-            ts_codes = extract_code(assistant_response, 'ts')
-            for code in ts_codes:
-                number_of_files = get_next_filename_index(
-                    os.path.join(ai_code_path, 'nextjs'), ".ts")
-            jsx_codes = extract_code(assistant_response, 'jsx')
-            for code in jsx_codes:
-                number_of_files = get_next_filename_index(
-                    os.path.join(ai_code_path, 'nextjs'), ".jsx")
-            js_codes = extract_code(assistant_response, 'js')
-            for code in js_codes:
-                number_of_files = get_next_filename_index(
-                    os.path.join(ai_code_path, 'nextjs'), ".js")
-            javascript_codes = extract_code(assistant_response, 'javascript')
-            for code in javascript_codes:
-                number_of_files = get_next_filename_index(
-                    os.path.join(ai_code_path, 'nextjs'), ".js")
         return assistant_response
 
     except Exception as e:

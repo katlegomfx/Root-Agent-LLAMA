@@ -36,7 +36,7 @@ def save_project_data(data, path="task.json"):
 
 async def name_project(user_input, retries=0):
 
-    name_project_convo = load_message_template(
+    name_project_convo = self.messages_context + load_message_template(
         "python")
     project_name_prompt = f"""Considering the following project goal: {user_input}.
 Name the project.
@@ -73,7 +73,7 @@ async def create_project_steps(project_name, project_goal, retries=0):
     projects = load_project_data()
     data_project = projects[project_name]
 
-    steps_project_convo = load_message_template(
+    steps_project_convo = self.messages_context + load_message_template(
         "projectSteps")
 
     project_steps_prompt = f"""Working on {project_name}
@@ -86,7 +86,8 @@ Create a numbered list steps to complete the project goal: {project_goal}
     })
     response = await infer(steps_project_convo)
 
-    correctness_prompt_messages = load_message_template(sys_type='general')
+    correctness_prompt_messages = self.messages_context + \
+        load_message_template(sys_type='general')
     correctness_prompt = f"""Given the following prompt:
 {project_steps_prompt}
 Given the following response:
@@ -116,7 +117,7 @@ async def create_step_tasks(project_name, project_goal, project_step, retries=0)
     projects = load_project_data()
     data_project = projects[project_name]
     data_step = data_project['steps'][project_step]
-    tasks_step_convo = load_message_template(
+    tasks_step_convo = self.messages_context + load_message_template(
         "projectTasks")
     step_tasks_prompt = f"""The project goal is: {project_goal}
 Considering the following project: {data_project}.
@@ -127,7 +128,8 @@ Create a numbered list tasks to complete the following project step: {data_step}
     })
     response = await infer(tasks_step_convo)
 
-    correctness_prompt_messages = load_message_template(sys_type='general')
+    correctness_prompt_messages = self.messages_context + \
+        load_message_template(sys_type='general')
     correctness_prompt = f"""Given the following prompt:
 {step_tasks_prompt}
 Given the following response:
@@ -162,7 +164,8 @@ Look at the following project step: {data_step}.
 Considering the following project: {data_project}.
 Describe actions in python code or shell code to complete the following project task: {data_task}.
 """
-    process_task_convo = load_message_template("projectProcess")
+    process_task_convo = self.messages_context + \
+        load_message_template("projectProcess")
 
     process_task_convo.append({
         'role': 'user', 'content': task_process_prompt

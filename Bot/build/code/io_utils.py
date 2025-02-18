@@ -1,5 +1,6 @@
 # Bot\build\code\io_utils.py
 import os
+import json
 from Bot.build.code.session.constants import (
     code_prefix,
     assistant_prefix,
@@ -27,3 +28,15 @@ def get_next_filename_index(directory: str, prefix: str) -> int:
     starting with the given prefix.
     """
     return len([item for item in os.listdir(os.path.join(gen_ai_path, directory)) if item.startswith(prefix)])
+
+def load_history(self):
+    if not os.path.exists("file_path"):
+        return []
+    with open("file_path", 'r') as file:
+        return json.load(file)
+    
+
+def store_history(self):
+    with open("file_path", 'w') as file:
+        json.dump(self, file, indent=4)
+
