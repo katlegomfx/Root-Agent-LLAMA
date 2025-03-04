@@ -1,5 +1,6 @@
 # Bot\build\code\llm\llm_client.py
 from colorama import Fore, Style
+from Bot.build.code.llm.llm_service import LLMService
 import ollama
 import time
 import json
@@ -49,17 +50,6 @@ PARAMETER temperature 2
 
         ollama.create(model=model_id, modelfile=modelfile)
 
-    # assistant_response = ''
-    # # Directly iterate over the async iterator returned by AsyncClient().chat(...)
-    # client = AsyncClient()
-    # response_generator = await client.chat(model=model_id, messages=messages, stream=True)
-    # async for part in response_generator:
-    #     section = part['message']['content']
-    #     print(section, end='', flush=True)
-    #     assistant_response += section
-    # print()
-    # return assistant_response
-
     stream = ollama.chat(
         model=model_id,
         messages=messages,
@@ -83,23 +73,12 @@ async def chat(messages: List[Dict[str, str]], model: str = 'llama3.2') -> str:
     Sends a list of messages to the AsyncClient and streams the assistant response.
     Conditionally prints the assistant output in color if in a TTY.
     """
-    print(f"#"*75)
-    assistant_response = ''
     client = AsyncClient()
-    response_generator = await client.chat(model=model, messages=messages, stream=True)
-    async for part in response_generator:
-        section = part['message']['content']
-        section_clean = strip_model_escapes(section)
-        colored_print(section_clean, color=Fore.YELLOW, end='', flush=True)
-        assistant_response += section
-    print()
-    return assistant_response
+    llm_service = LLMService(client, model="llama3.2")
+    response = await llm_service.chat(messages)
+    return response
 
 async def infer(messages: List[Dict[str, str]], model: str = 'llama3.2'):
-    # print(messages[-2]['content'])
-    # print(len(messages[-2]['content']))
-    # input("messages")
-
     start_time = time.time()
     response = await chat(messages)
     time_taken = time.time() - start_time
@@ -179,3 +158,4 @@ async def process_user_messages_with_model(messages: List[Dict[str, str]], tool_
             error_content, os.path.join(gen_ai_path, ai_errors_path, error_file))
 
         print(f'An error ocurred:\n{e}')
+

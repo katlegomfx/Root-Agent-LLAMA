@@ -2,7 +2,7 @@
 import os
 import json
 
-from Bot.build.code.llm.prompts import load_message_template, process_user_messages_with_model, code_corpus, add_context_to_messages, read_file_content, get_message_context_summary
+from Bot.build.code.llm.prompts import load_message_template, process_user_messages_with_model
 from Bot.build.code.tasks.improver import analyze, improve, refine
 
 class AIRequests:
@@ -18,7 +18,7 @@ class AIRequests:
     
     #     return summary_result
 
-    async def do_auto_improve(self, arg):
+    async def do_auto_improve(self):
         """
         Automatically improves the initial state by creating a plan, executing steps,        
         and checking for completion.

@@ -7,7 +7,7 @@ from mysql.connector import Error
 import mysql.connector
 from contextlib import contextmanager
 
-from Bot.build.code.cli.next.utils.shared import app_name, venv_name, node_path, npm_path, npx_path, ensure_folder_exists
+from Bot.build.code.cli.next.utils.shared import app_name, venv_name, npm_path, npx_path, ensure_folder_exists
 
 def is_package_installed(package_name):
     """Check if a given Python package is installed."""

@@ -9,7 +9,7 @@ import shlex
 from prompt_toolkit.completion import Completer, Completion
 
 class FilePathCompleter(Completer):
-    def get_completions(self, document, complete_event):
+    def get_completions(self, document):
         text = document.text_before_cursor
         dirname, partial_filename = os.path.split(text)
         if not dirname:
@@ -32,7 +32,7 @@ class CLICompleter(Completer):
             'option': ['timeout', 'default'],
             }
 
-    def get_completions(self, document, complete_event):
+    def get_completions(self, document):
         try:
             text = document.text_before_cursor
             words = shlex.split(text)

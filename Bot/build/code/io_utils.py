@@ -2,18 +2,6 @@
 import os
 import json
 from Bot.build.code.session.constants import (
-    code_prefix,
-    assistant_prefix,
-    summary_prefix,
-    ai_code_path,
-    ai_results_path,
-    ai_history_path,
-    ai_errors_path,
-    ai_summaries_path,
-    binary_answer,
-    anonymised, error_file,
-    triple_backticks,
-    md_heading,
     gen_ai_path
 )
 

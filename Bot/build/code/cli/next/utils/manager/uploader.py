@@ -1,6 +1,5 @@
 # Bot\build\code\cli\next\utils\manager\uploader.py
 import os
-import subprocess
 from ftplib import FTP
 from dotenv import load_dotenv
 

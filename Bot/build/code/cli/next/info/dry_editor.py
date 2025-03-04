@@ -1,5 +1,4 @@
 # Bot\build\code\cli\next\info\dry_editor.py
-import os
 import shutil
 import re
 from typing import List

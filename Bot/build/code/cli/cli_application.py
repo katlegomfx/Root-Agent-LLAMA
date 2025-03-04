@@ -10,7 +10,7 @@ import os
 import json
 from contextlib import suppress
 
-from typing import List, Dict, Any
+from typing import List, Dict
 
 from threading import Event
 
@@ -21,13 +21,12 @@ from prompt_toolkit.patch_stdout import patch_stdout
 
 from Bot.build.code.gui.gui_application import GUIApplication
 from Bot.build.code.cli.next.control import execute_commands
-from Bot.build.code.llm.llm_client import infer
 from Bot.build.code.llm.workflows import accomplished_request, decide_execution
 from Bot.build.code.session.config import ensure_build_directories
 from Bot.build.code.session.constants import (
     config, gen_ai_path, ai_history_path)
 from Bot.build.code.llm.prompts import process_user_messages_with_model, get_message_context_summary
-from Bot.build.code.cli.cli_helpers import FilePathCompleter, CLICompleter
+from Bot.build.code.cli.cli_helpers import CLICompleter
 from Bot.build.code.session.session_management import SessionManager
 
 from Bot.build.code.cli.user_requests import UserRequests
@@ -96,59 +95,59 @@ class CLIApplication(UserRequests, AIRequests, CLIRequests):
 
         self.voice_listener_task = None
 
-    # async def speak(self, text: str):
-    #     """Use TTS to speak the given text, excluding code blocks."""
-    #     try:
-    #         # Strip code blocks from the text
-    #         clean_text = strip_code_blocks(text)
-    #         if not clean_text.strip():
-    #             return  # Avoid speaking if there's no meaningful text
+    async def speak(self, text: str):
+        """Use TTS to speak the given text, excluding code blocks."""
+        try:
+            # Strip code blocks from the text
+            clean_text = strip_code_blocks(text)
+            if not clean_text.strip():
+                return  # Avoid speaking if there's no meaningful text
 
-    #         # Optionally, split text into manageable chunks to avoid overwhelming the TTS engine
-    #         max_chunk_size = 500  # Adjust based on TTS capabilities
-    #         chunks = [clean_text[i:i+max_chunk_size]
-    #                 for i in range(0, len(clean_text), max_chunk_size)]
+            # Optionally, split text into manageable chunks to avoid overwhelming the TTS engine
+            max_chunk_size = 500  # Adjust based on TTS capabilities
+            chunks = [clean_text[i:i+max_chunk_size]
+                    for i in range(0, len(clean_text), max_chunk_size)]
 
-    #         loop = asyncio.get_event_loop()
-    #         for chunk in chunks:
-    #             if chunk.strip():
-    #                 await loop.run_in_executor(None, self.tts_engine.say, chunk)
-    #                 await loop.run_in_executor(None, self.tts_engine.runAndWait)
-    #     except Exception as e:
-    #         print(f"Error in TTS: {e}")
+            loop = asyncio.get_event_loop()
+            for chunk in chunks:
+                if chunk.strip():
+                    await loop.run_in_executor(None, self.tts_engine.say, chunk)
+                    await loop.run_in_executor(None, self.tts_engine.runAndWait)
+        except Exception as e:
+            print(f"Error in TTS: {e}")
 
-    # async def listen(self) -> str:
-    #     """Listen to the microphone and return the recognized text."""
-    #     with self.microphone as source:
-    #         self.recognizer.adjust_for_ambient_noise(source)
-    #         try:
-    #             audio = await asyncio.get_event_loop().run_in_executor(None, self.recognizer.listen, source)
-    #             text = self.recognizer.recognize_google(audio)
-    #             return text.lower()
-    #         except sr.UnknownValueError:
-    #             await self.speak("Sorry, I did not understand that.")
-    #             return ""
-    #         except sr.RequestError:
-    #             await self.speak("Sorry, I'm unable to reach the speech recognition service.")
-    #             return ""
+    async def listen(self) -> str:
+        """Listen to the microphone and return the recognized text."""
+        with self.microphone as source:
+            self.recognizer.adjust_for_ambient_noise(source)
+            try:
+                audio = await asyncio.get_event_loop().run_in_executor(None, self.recognizer.listen, source)
+                text = self.recognizer.recognize_google(audio)
+                return text.lower()
+            except sr.UnknownValueError:
+                await self.speak("Sorry, I did not understand that.")
+                return ""
+            except sr.RequestError:
+                await self.speak("Sorry, I'm unable to reach the speech recognition service.")
+                return ""
 
-    # async def voice_command_listener(self):
-    #     """Continuously listen for voice commands."""
-    #     await self.speak("Voice command listener activated. Say 'hey flexi' to start.")
-    #     while not self.stop_event.is_set():
-    #         command = await self.listen()
-    #         if "hey flexi" in command:
-    #             await self.speak("Listening for your command.")
-    #             user_command = await self.listen()
-    #             if user_command:
-    #                 if "stop" in user_command:
-    #                     await self.speak("Voice command listener deactivated.")
-    #                     self.stop_event.set()
-    #                     break
-    #                 else:
-    #                     await self.handle_command(user_command)
-    #     # Reset the stop_event for future use
-    #     self.stop_event.clear()
+    async def voice_command_listener(self):
+        """Continuously listen for voice commands."""
+        await self.speak("Voice command listener activated. Say 'hey flexi' to start.")
+        while not self.stop_event.is_set():
+            command = await self.listen()
+            if "hey flexi" in command:
+                await self.speak("Listening for your command.")
+                user_command = await self.listen()
+                if user_command:
+                    if "stop" in user_command:
+                        await self.speak("Voice command listener deactivated.")
+                        self.stop_event.set()
+                        break
+                    else:
+                        await self.handle_command(user_command)
+        # Reset the stop_event for future use
+        self.stop_event.clear()
 
     async def send_and_store_message(self, messages: List[Dict[str, str]], speak_back: bool = False, send_type='') -> str:
         """
@@ -160,6 +159,7 @@ class CLIApplication(UserRequests, AIRequests, CLIRequests):
             speak_back (bool): Whether to read the assistant's response via TTS.
         """
         try:
+            
             if send_type == 'decide':
                 response = await decide_execution(messages)
             elif send_type == 'check':
@@ -174,11 +174,9 @@ class CLIApplication(UserRequests, AIRequests, CLIRequests):
             self.messages_context.append(
                 {'role': 'assistant', 'content': response})
 
-            # print(len(self.messages_context))
-            # input("len(self.messages_context)")
             # Conditionally speak the assistant's response
-            # if speak_back:
-            #     await self.speak(response)
+            if speak_back:
+                await self.speak(response)
 
             await self.trim_context()
             return response
@@ -193,24 +191,31 @@ class CLIApplication(UserRequests, AIRequests, CLIRequests):
                 self.messages_context.clear()
                 print("Cleared previous inputs.")
 
-            # elif user_input.startswith("start voice"):
-            #     if self.voice_listener_task is None or self.voice_listener_task.done():
-            #         self.voice_listener_task = asyncio.create_task(
-            #             self.voice_command_listener())
-            #         await self.speak("Voice command listener started.")
-            #     else:
-            #         await self.speak("Voice command listener is already running.")
-            # elif user_input.startswith("stop voice"):
-            #     if self.voice_listener_task and not self.voice_listener_task.done():
-            #         self.stop_event.set()
-            #         await self.voice_listener_task
-            #         self.voice_listener_task = None
-            #         await self.speak("Voice command listener deactivated.")
-            #     else:
-            #         await self.speak("Voice command listener is not running.")
+            elif user_input.startswith("start voice"):
+                if self.voice_listener_task is None or self.voice_listener_task.done():
+                    self.voice_listener_task = asyncio.create_task(
+                        self.voice_command_listener())
+                    await self.speak("Voice command listener started.")
+                else:
+                    await self.speak("Voice command listener is already running.")
+            elif user_input.startswith("stop voice"):
+                if self.voice_listener_task and not self.voice_listener_task.done():
+                    self.stop_event.set()
+                    await self.voice_listener_task
+                    self.voice_listener_task = None
+                    await self.speak("Voice command listener deactivated.")
+                else:
+                    await self.speak("Voice command listener is not running.")
 
             elif user_input.startswith("agent"):
                 await self.process_agent_request(user_input)
+
+            elif user_input.startswith("simple"):
+                await self.process_simple_request(user_input)
+
+      
+            elif user_input.startswith("video"):
+                await self.process_video_request(user_input)
 
             elif user_input.startswith("flex"):
                 await self.process_flex_request(user_input)
@@ -445,7 +450,7 @@ async def main():
         cli_app.save_session()
 
         # Speak shutdown message
-        # await cli_app.speak("Application is shutting down.")
+        await cli_app.speak("Application is shutting down.")
 
 if __name__ == "__main__":
     try:

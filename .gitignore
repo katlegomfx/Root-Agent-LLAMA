@@ -49,3 +49,31 @@ results
 Flexi
 request
 
+agv2Base/video_gen.py
+agv2Base/vv_gen.py
+agv2Base/vvgui_gen.py
+agv2Base/constants.py
+
+
+agv2Base
+
+video/gen/*
+.gitignore
+video/gen/generated_topic_text.txt
+video/gen/generated_topic_text copy.txt
+video/gen/generated_video_with_voice.mp4
+video/gen/topics.json
+.gitignore
+history/test_sesssion_1.json
+gui_vv_gen.py
+video/code/audio.py
+video/code/config.py
+video/code/frames.py
+video/code/gui.py
+video/code/inference.py
+video/code/topics.py
+video/code/video.py
+video/gui_vv_gen.py
+Modelfile
+system_prompts/flexi.txt
+history/vibe.json

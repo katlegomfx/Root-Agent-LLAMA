@@ -1,5 +1,4 @@
 # Bot\build\code\cli\user_requests.py
-import asyncio
 import os
 import sys
 import traceback
@@ -8,15 +7,12 @@ from colorama import Fore
 
 from Bot.build.code.cli.cli_helpers import colored_print
 from Bot.build.code.cli.next.info.add_path import prepend_file_location_check
-from Bot.build.code.cli.next.info.code_cleaner import list_files_with_comment_header
 from Bot.build.code.cli.next.info.dry_check import find_similar_code_in_directory
 from Bot.build.code.cli.next.info.line_cleaner import process_directory
-from Bot.build.code.llm.extract import extract_code
-from Bot.build.code.llm.llm_client import chat
-from Bot.build.code.llm.workflows import accomplished_request, code_use, decide_execution, tool_use
+from Bot.build.code.llm.workflows import code_use, tool_use
 from Bot.build.code.session.constants import (
-    config, ai_errors_path, error_file, gen_ai_path)
-from Bot.build.code.llm.prompts import load_message_template, process_user_messages_with_model, code_corpus, read_file_content
+    ai_errors_path, error_file, gen_ai_path, tips)
+from Bot.build.code.llm.prompts import load_message_template, code_corpus, read_file_content
 from Bot.build.code.io_utils import write_content_to_file
 
 class UserRequests:
@@ -64,7 +60,7 @@ class UserRequests:
 
         # Prepare prompt with chat history
         prompt = f"# Considering the following:\n\n{
-            base_code}\n\n# {user_request}"
+            base_code}\n\n# {user_request}\n\n{tips}"
         write_content_to_file(prompt, './prompts/gen/code_prompt.md')
         code_messages = self.messages_context + load_message_template(
             sys_type='python', summary=self.summary)
@@ -100,10 +96,10 @@ class UserRequests:
         if len(user_request) >= 3:
             final_request = f"\n\n# {user_request}"
             prompt = f'# Considering the following:\n\n{
-                base_code}\n\n# {goal}{final_request}'
+                base_code}\n\n# {goal}{final_request}\n\n{tips}'
         else:
             prompt = f'# Considering the following:\n\n{
-                base_code}\n\n# {goal}'
+                base_code}\n\n# {goal}\n\n{tips}'
 
         write_content_to_file(prompt, './prompts/gen/flex_prompt.md')
 
@@ -149,7 +145,7 @@ class UserRequests:
         base_code = "".join(code_corpus('./Bot'))
         user_request = user_input.replace('self ', '')
         prompt = f'# Codebase:\n\n{
-            base_code}\n\n# {user_request}'
+            base_code}\n\n# {user_request}\n\n{tips}'
         write_content_to_file(prompt, './prompts/gen/self_prompt.md')
         code_self_messages = self.messages_context + load_message_template(
             sys_type='python', summary=self.summary)
@@ -165,7 +161,7 @@ class UserRequests:
 
         # Prepare prompt with chat history
         prompt = f"# Considering the following:\n\n{
-            base_code}\n\n# What modifications need to be made in order to address the error:\n\n{error_code}"
+            base_code}\n\n# What modifications need to be made in order to address the error:\n\n{error_code}\n\n{tips}"
         write_content_to_file(prompt, './prompts/gen/fix_prompt.md')
         fix_messages = self.messages_context + load_message_template(
             sys_type='python', summary=self.summary)
@@ -267,7 +263,7 @@ class UserRequests:
                     'role': 'user',
                     'content': f"Look at the following error:\n{error_text}\nIn the code:\n{base_code}\nHow can we fix this error"
                 })
-                fix_res = asyncio.run(chat(base_prompt))
+                fix_res = await self.send_and_store_message(base_prompt)
                 open("error_fix.md", "w", encoding="utf-8").write(fix_res)
                 sys.exit(1)
 
@@ -289,3 +285,35 @@ class UserRequests:
                 ai_choice = await self.send_and_store_message(base_prompt, send_type='check')
                 if 'no' not in ai_choice:
                     state = True
+
+    async def process_video_request(self, user_input: str, tries=0):
+        base_code = "".join(code_corpus('./video'))
+        user_request = user_input.replace('video ', '')
+        if len(user_request) >= 3:
+            final_request = f"\n\n# {user_request}"
+            prompt = f'# Considering the following:\n\n{
+                base_code}{final_request}\n\n{tips}'
+        else:
+            prompt = f'# Considering the following:\n\n{
+                base_code}'
+
+        write_content_to_file(prompt, './prompts/gen/video_prompt.md')
+
+    async def process_simple_request(self, user_input: str, tries=0):
+        base_code = "".join(code_corpus('./simple'))
+        user_request = user_input.replace('simple ', '')
+        if len(user_request) >= 3:
+            final_request = f"\n\n# {user_request}"
+            prompt = f'# Considering the following:\n\n{
+                base_code}{final_request}\n\n{tips}'
+        else:
+            prompt = f'# Considering the following:\n\n{
+                base_code}'
+
+        write_content_to_file(prompt, './prompts/gen/simple_prompt.md')
+
+        # code_messages = self.messages_context + load_message_template(
+        #     sys_type='python', summary=self.summary)
+        # code_messages.append({'role': 'user', 'content': prompt})
+
+        # response = await self.send_and_store_message(code_messages)

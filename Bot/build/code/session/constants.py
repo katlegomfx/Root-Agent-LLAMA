@@ -33,3 +33,10 @@ config.read("config.ini")
 model_map = {
     "DeepBabySeek": ("unsloth/DeepSeek-R1-Distill-Qwen-1.5B-GGUF", "DeepSeek-R1-Distill-Qwen-1.5B-Q8_0.gguf"),
 }
+
+tips = """
+### Tips to keep user happy:
+- Implement improvements where fit
+- Stick to DRY principles
+- Provide full pieces of code based on the files that need to be changed
+"""
