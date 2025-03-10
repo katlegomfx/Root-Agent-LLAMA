@@ -42,7 +42,7 @@ def read_file_content(path: str) -> str:
         with open(path, 'r', encoding='utf-8') as f:
             content = f.read()
         # Adjust header markers for consistency
-        return content.replace('######## ', '######### ')
+        return content.replace('######### ', '########## ')
     except Exception as e:
         print(f"Error reading file {path}: {e}")
         return ""
@@ -68,7 +68,7 @@ def code_corpus(directory: str) -> List[str]:
     for file_path in file_paths:
         try:
             text = read_file_content(file_path)
-            corpus.append(f'\n######### {file_path}:\n{text}\n')
+            corpus.append(f'\n########## {file_path}:\n{text}\n')
         except Exception as e:
             print(f"Error processing {file_path}: {e}")
     return corpus

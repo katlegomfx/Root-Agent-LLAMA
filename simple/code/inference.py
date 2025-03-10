@@ -1,6 +1,9 @@
 import asyncio
 from typing import List, Any
 from ollama import AsyncClient
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 # Global reference for the current inference session.
 current_client = None
@@ -16,7 +19,7 @@ class InferenceClient:
         try:
             response_generator = await self.client.chat(model=self.model_name, messages=messages, stream=True)
         except Exception as e:
-            print(f"Error starting chat: {e}")
+            logging.error(f"Error starting chat: {e}")
             return f"Error starting inference: {e}"
 
         full_text = ""
@@ -25,17 +28,17 @@ class InferenceClient:
             widget.insert("end", s)
             widget.see("end")
 
-        print("#" * 75)
+        logging.info("Starting inference chat...")
         async for part in response_generator:
             if self.cancelled:
-                print("\nInference cancelled.")
+                logging.info("Inference cancelled.")
                 root.after(0, append_text, "\n[Inference cancelled]")
                 break
             section = part.get("message", {}).get("content", "")
             full_text += section
             print(section, end="", flush=True)
             root.after(0, append_text, section)
-        print("\n" + "#" * 75)
+        logging.info("Inference completed.")
         return full_text
 
     def cancel(self) -> None:
@@ -49,5 +52,6 @@ def run_inference(messages: List[dict], widget: Any, root: Any, model_name: str)
     try:
         result = asyncio.run(client.chat(messages, widget, root))
     except Exception as e:
+        logging.error(f"Error during inference: {e}")
         result = f"Error during inference: {e}"
     return result

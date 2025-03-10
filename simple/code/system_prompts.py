@@ -2,7 +2,9 @@ import os
 from datetime import datetime
 import subprocess
 from typing import Any, List, Dict
+import logging
 
+logging.basicConfig(level=logging.INFO)
 
 DEFAULT_PROMPT_FILE = "flexi.txt"
 DEFAULT_PROMPT_CONTENT = "You are Flexi💻AI. You think step by step, keeping key points in mind to solve or answer the request."
@@ -40,12 +42,10 @@ def execute_bash_command(command: any) -> str:
                 f"Command failed with exit code {process.returncode}, error: {error.decode('utf-8')}")
         return output.decode('utf-8')
     except Exception as e:
-        print(f"Error in bash command: {e}")
+        logging.error(f"Error in bash command: {e}")
         return ""
 
 
-
-# Tool registry
 tool_registry = {
     execute_bash_command.__name__: execute_bash_command,
 }
@@ -63,10 +63,6 @@ def add_context_to_messages(messages: List[Dict[str, str]], summary: str) -> Lis
 
 
 def load_message_template(sys_type: str = 'base', summary: str = '') -> List[Dict[str, str]]:
-    """
-    Loads a message template based on the system type and optional summary.
-    Returns a list of messages (dictionaries) with a system role.
-    """
     sys_type = sys_type.lower()
     if sys_type == "base":
         content = f"""
@@ -74,27 +70,21 @@ def load_message_template(sys_type: str = 'base', summary: str = '') -> List[Dic
 {MD_HEADING} You must handle user requests by reasoning step by step:
 {MD_HEADING} 1) Understand the user request.
 {MD_HEADING} 2) Choose if you will use a tool or python.
-{MD_HEADING} 3) Respond with your choice in a JSON object wrapped in triple backticks.
+{MD_HEADING} Respond with your choice in a JSON object wrapped in triple backticks.
 {MD_HEADING} Usage:
 - Provide a **JSON** response wrapped in triple backticks and with JSON indicated (start with {TRIPLE_BACKTICKS}json)
 - The response should contain the name of the executor to use (either "python" or "tool").
 - Schema Example:
     {TRIPLE_BACKTICKS}json
-    {{
-        "use": "<name>"
-    }}
+    {{"use": "<name>"}}
     {TRIPLE_BACKTICKS}
 - Example 1:
     {TRIPLE_BACKTICKS}json
-    {{
-        "use": "tool"
-    }}
+    {{"use": "tool"}}
     {TRIPLE_BACKTICKS}
 - Example 2:
     {TRIPLE_BACKTICKS}json
-    {{
-        "use": "python"
-    }}
+    {{"use": "python"}}
     {TRIPLE_BACKTICKS}
 {MD_HEADING} Available Tools:
 {MD_HEADING} Names:
@@ -112,9 +102,7 @@ def load_message_template(sys_type: str = 'base', summary: str = '') -> List[Dic
 {MD_HEADING} Respond with your decision in a JSON object wrapped in triple backticks.
 {MD_HEADING} Schema Example:
     {TRIPLE_BACKTICKS}json
-    {{
-        "use": "<yes or no>"
-    }}
+    {{"use": "<yes or no>"}}
     {TRIPLE_BACKTICKS}
 """
         message = [{'role': 'system', 'content': content.strip()}]
@@ -142,10 +130,7 @@ Documentation: [{", ".join([(tool_registry[tool].__doc__ or "").strip() for tool
 - Include the tool name and parameters.
 Example:
     {TRIPLE_BACKTICKS}json
-    {{
-        "tool": "<name>",
-        "parameters": "<values>"
-    }}
+    {{"tool": "<name>", "parameters": "<values>"}}
     {TRIPLE_BACKTICKS}
 """
         message = [{'role': 'system', 'content': content.strip()}]
@@ -157,5 +142,4 @@ Example:
     else:
         message = [
             {'role': 'system', 'content': f"{MD_HEADING} You are an expert {sys_type.capitalize()} Developer."}]
-
     return add_context_to_messages(message, summary)

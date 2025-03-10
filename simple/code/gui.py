@@ -10,6 +10,7 @@ from datetime import datetime
 import os
 import tempfile
 import subprocess
+import logging
 from typing import List
 
 from simple.code import utils
@@ -17,7 +18,17 @@ from simple.code.inference import run_inference, current_client
 from simple.code.history import HistoryManager
 from simple.code.system_prompts import load_message_template
 
-# --- Custom Collapsible Section Widget ---
+logging.basicConfig(level=logging.INFO)
+
+
+def apply_theme_recursive(widget, bg_color, fg_color):
+    """Recursively apply background and foreground colors to widget and its children."""
+    try:
+        widget.configure(bg=bg_color, fg=fg_color)
+    except tk.TclError:
+        pass
+    for child in widget.winfo_children():
+        apply_theme_recursive(child, bg_color, fg_color)
 
 
 class CollapsibleSection(tk.Frame):
@@ -45,8 +56,6 @@ class CollapsibleSection(tk.Frame):
             self.toggle_button.configure(text="-")
             self.show.set(True)
 
-# --- Main Application Class ---
-
 
 class FlexiAIApp:
     def __init__(self, root: tk.Tk) -> None:
@@ -55,6 +64,10 @@ class FlexiAIApp:
         self.root.geometry("600x1000")
         self.is_dark_mode = False
         self.set_app_icon()
+        # List to store all collapsible sections
+        self.collapsible_sections = []
+        # Global flag indicating whether all sections are currently expanded
+        self.all_sections_expanded = True
 
         self.text_prompt = [{
             'role': 'system',
@@ -71,6 +84,7 @@ class FlexiAIApp:
         self.setup_ui()
         self.auto_save_interval_ms = 5 * 60 * 1000  # 5 minutes
         self.schedule_auto_save()
+        self.load_first_history()  # Load the first history file if available
 
     def set_app_icon(self) -> None:
         try:
@@ -81,22 +95,43 @@ class FlexiAIApp:
                 from simple.makeArt import create_artistic_png
                 default_data = [1, 3, 2, 5, 7, 8, 6]
                 create_artistic_png(default_data, filename=icon_path)
-                print(
+                logging.info(
                     f"Icon file not found. Generated new icon at: {icon_path}")
             icon = tk.PhotoImage(file=icon_path)
             self.root.iconphoto(True, icon)
         except Exception as e:
-            print(f"Failed to load custom icon: {e}")
+            logging.error(f"Failed to load custom icon: {e}")
+
+    def load_first_history(self) -> None:
+        """Automatically load the first history file found, if any."""
+        history_files = self.history_manager.get_history_files()
+        if history_files:
+            first_history = history_files[0]
+            loaded_history = self.history_manager.load_history(first_history)
+            if loaded_history:
+                self.text_prompt = loaded_history
+                self.current_history_file = first_history
+                # If the loaded history contains a system prompt, update the system text area.
+                if self.text_prompt and self.text_prompt[0].get("role") == "system":
+                    self.system_text_area.delete("1.0", tk.END)
+                    self.system_text_area.insert(
+                        "1.0", self.text_prompt[0]["content"])
+                self.update_user_input_history()
+                self.update_assistant_response_history()
+                logging.info(f"Loaded history from {first_history}")
 
     def setup_ui(self) -> None:
-        # Top Bar
+        # Top Bar with new Toggle All button
         top_bar = tk.Frame(self.root)
         top_bar.pack(fill="x", padx=5, pady=5)
         tk.Button(top_bar, text="Toggle Theme",
                   command=self.toggle_theme).pack(side="right")
+        tk.Button(top_bar, text="Toggle All",
+                  command=self.toggle_all_sections).pack(side="left", padx=5)
 
         # Model Selection Section
         model_section = CollapsibleSection(self.root, title="Model Selection")
+        self.collapsible_sections.append(model_section)
         model_section.pack(fill="x", padx=5, pady=5)
         model_frame = model_section.content_frame
         tk.Label(model_frame, text="Select Model:").grid(
@@ -109,6 +144,7 @@ class FlexiAIApp:
 
         # System Prompt Section
         system_section = CollapsibleSection(self.root, title="System Prompt")
+        self.collapsible_sections.append(system_section)
         system_section.pack(fill="x", padx=5, pady=5)
         system_frame = system_section.content_frame
         tk.Label(system_frame, text="System Prompt:").grid(
@@ -123,6 +159,7 @@ class FlexiAIApp:
         # System Prompt Management Section
         sp_mgmt_section = CollapsibleSection(
             self.root, title="System Prompt Management")
+        self.collapsible_sections.append(sp_mgmt_section)
         sp_mgmt_section.pack(fill="x", padx=5, pady=5)
         sp_mgmt_frame = sp_mgmt_section.content_frame
         tk.Label(sp_mgmt_frame, text="System Prompts:").grid(
@@ -139,16 +176,17 @@ class FlexiAIApp:
         self.prompt_name_entry = tk.Entry(sp_mgmt_frame)
         self.prompt_name_entry.grid(
             row=1, column=1, padx=5, pady=5, sticky="ew")
-        tk.Button(sp_mgmt_frame, text="Save as New", command=self.save_system_prompt_as_new).grid(
-            row=1, column=2, padx=5, pady=5)
-        tk.Button(sp_mgmt_frame, text="Delete Prompt", command=self.delete_system_prompt_file).grid(
-            row=1, column=3, padx=5, pady=5)
+        tk.Button(sp_mgmt_section.content_frame, text="Save as New",
+                  command=self.save_system_prompt_as_new).grid(row=1, column=2, padx=5, pady=5)
+        tk.Button(sp_mgmt_section.content_frame, text="Delete Prompt",
+                  command=self.delete_system_prompt_file).grid(row=1, column=3, padx=5, pady=5)
         sp_mgmt_frame.grid_columnconfigure(1, weight=1)
         self.update_system_prompts_dropdown()
 
         # Message Template Section
         template_section = CollapsibleSection(
             self.root, title="Message Template")
+        self.collapsible_sections.append(template_section)
         template_section.pack(fill="x", padx=5, pady=5)
         template_frame = template_section.content_frame
         tk.Label(template_frame, text="Template Type:").grid(
@@ -169,6 +207,7 @@ class FlexiAIApp:
 
         # Execution Mode Section
         mode_section = CollapsibleSection(self.root, title="Execution Mode")
+        self.collapsible_sections.append(mode_section)
         mode_section.pack(fill="x", padx=5, pady=5)
         mode_frame = mode_section.content_frame
         tk.Label(mode_frame, text="Select Mode:").grid(
@@ -181,6 +220,7 @@ class FlexiAIApp:
 
         # History Section
         history_section = CollapsibleSection(self.root, title="History")
+        self.collapsible_sections.append(history_section)
         history_section.pack(fill="x", padx=5, pady=5)
         history_frame = history_section.content_frame
         tk.Label(history_frame, text="History Files:").grid(
@@ -213,6 +253,7 @@ class FlexiAIApp:
         # Code Append Section
         code_append_section = CollapsibleSection(
             self.root, title="Code Append")
+        self.collapsible_sections.append(code_append_section)
         code_append_section.pack(fill="x", padx=5, pady=5)
         code_append_frame = code_append_section.content_frame
         tk.Label(code_append_frame, text="Codebase Directory:").grid(
@@ -228,6 +269,7 @@ class FlexiAIApp:
 
         # Input Section
         input_section = CollapsibleSection(self.root, title="Input")
+        self.collapsible_sections.append(input_section)
         input_section.pack(fill="x", padx=5, pady=5)
         input_frame = input_section.content_frame
         self.input_text_area = tk.Text(input_frame, height=5)
@@ -249,6 +291,7 @@ class FlexiAIApp:
 
         # Output Section
         output_section = CollapsibleSection(self.root, title="Output")
+        self.collapsible_sections.append(output_section)
         output_section.pack(fill="both", expand=True, padx=5, pady=5)
         output_frame = output_section.content_frame
         response_control_frame = tk.Frame(output_frame)
@@ -267,6 +310,7 @@ class FlexiAIApp:
         # Code Extraction Section
         code_extraction_section = CollapsibleSection(
             self.root, title="Code Extraction")
+        self.collapsible_sections.append(code_extraction_section)
         code_extraction_section.pack(fill="x", padx=5, pady=5)
         code_extraction_frame = code_extraction_section.content_frame
         tk.Label(code_extraction_frame, text="Extract Code Snippets (Language):").grid(
@@ -281,7 +325,18 @@ class FlexiAIApp:
                   command=self.save_suggested_files_from_output).grid(row=0, column=3, padx=5, pady=5)
         code_extraction_frame.grid_columnconfigure(0, weight=1)
 
-    # ----------------- Helper Methods -----------------
+    def toggle_all_sections(self) -> None:
+        """Toggle expand/collapse state for all collapsible sections."""
+        for section in self.collapsible_sections:
+            # Collapse if all are expanded; otherwise expand
+            if self.all_sections_expanded and section.show.get():
+                section.toggle()
+            elif not self.all_sections_expanded and not section.show.get():
+                section.toggle()
+        self.all_sections_expanded = not self.all_sections_expanded
+        logging.info(
+            f"All sections toggled. Expanded state now: {self.all_sections_expanded}")
+
     def load_template(self) -> None:
         template_type = self.template_var.get()
         summary_text = self.template_summary.get("1.0", "end-1c").strip()
@@ -289,18 +344,15 @@ class FlexiAIApp:
         if messages:
             self.system_text_area.delete("1.0", tk.END)
             self.system_text_area.insert("1.0", messages[0]["content"])
-            print(f"Loaded '{template_type}' template with summary context.")
+            logging.info(
+                f"Loaded '{template_type}' template with summary context.")
 
     def toggle_theme(self) -> None:
         self.is_dark_mode = not self.is_dark_mode
         bg_color = "#2e2e2e" if self.is_dark_mode else "SystemButtonFace"
         fg_color = "white" if self.is_dark_mode else "black"
         self.root.configure(bg=bg_color)
-        for widget in self.root.winfo_children():
-            try:
-                widget.configure(bg=bg_color, fg=fg_color)
-            except Exception:
-                pass
+        apply_theme_recursive(self.root, bg_color, fg_color)
 
     def schedule_auto_save(self) -> None:
         self.auto_save_history()
@@ -310,9 +362,9 @@ class FlexiAIApp:
         global current_client
         if current_client:
             current_client.cancel()
-            print("Inference cancellation requested.")
+            logging.info("Inference cancellation requested.")
         else:
-            print("No active inference to cancel.")
+            logging.info("No active inference to cancel.")
 
     def update_user_input_history(self) -> None:
         self.user_input_history = [msg["content"]
@@ -332,15 +384,19 @@ class FlexiAIApp:
                 base_code_list = utils.code_corpus(codebase_path)
                 base_code = "\n".join(base_code_list)
             except Exception as e:
-                print(f"Error reading codebase: {e}")
+                logging.error(f"Error reading codebase: {e}")
         tips = self.tips_entry.get("1.0", "end-1c").strip()
-        return f"######## Codebase:\n\n{base_code}\n\n######## {user_request}\n\n{tips}"
+        return f"########## Codebase:\n\n{base_code}\n\n########## {user_request}\n\n{tips}"
 
-    # -------------- Async Tool/Code/Decision Helpers --------------
+    @staticmethod
+    def extract_code_blocks(text: str, language: str) -> list:
+        pattern = rf"```{re.escape(language)}\s*\n(.*?)```"
+        return re.findall(pattern, text, re.DOTALL)
+
     async def tool_use(self, base_prompt: List[dict]):
         base_response = run_inference(
             base_prompt, self.output_text_area, self.root, self.model_var.get())
-        tool_script = self.extract_code(base_response, 'json')
+        tool_script = self.extract_code_blocks(base_response, 'json')
         if not tool_script:
             correction_prompt = base_prompt.copy()
             correction_prompt.append(
@@ -369,7 +425,7 @@ class FlexiAIApp:
                 new_prompt.append(
                     {'role': 'assistant', 'content': json.dumps(base_response)})
                 new_prompt.append(
-                    {'role': 'user', 'content': f"### Generated tool instruction:\n\n{json.dumps(tool_script)}\n\n### Execution result:\n\n{status_message['message']}\n\n### Fix the above error"})
+                    {'role': 'user', 'content': f"##### Generated tool instruction:\n\n{json.dumps(tool_script)}\n\n##### Execution result:\n\n{status_message['message']}\n\n##### Fix the above error"})
                 return await self.tool_use(new_prompt)
             else:
                 base_prompt.append(
@@ -377,7 +433,7 @@ class FlexiAIApp:
                 status_messages.append(status_message)
             final_prompt = base_prompt.copy()
             final_prompt.append(
-                {'role': 'user', 'content': f"### Generated tool instruction:\n\n{code_snippet}\n\n### Execution result:\n\n{status_message['message']}"})
+                {'role': 'user', 'content': f"##### Generated tool instruction:\n\n{code_snippet}\n\n##### Execution result:\n\n{status_message['message']}"})
             final_response = run_inference(
                 final_prompt, self.output_text_area, self.root, self.model_var.get())
             base_prompt.append(
@@ -387,18 +443,18 @@ class FlexiAIApp:
     async def code_use(self, base_prompt: List[dict]):
         base_response = run_inference(
             base_prompt, self.output_text_area, self.root, self.model_var.get())
-        code_script = self.extract_code(base_response, 'python')
+        code_script = self.extract_code_blocks(base_response, 'python')
         status_message = execute_python_code("".join(code_script))
         if status_message['status'] != "200":
             new_prompt = base_prompt.copy()
             new_prompt.append({'role': 'assistant', 'content': base_response})
             new_prompt.append(
-                {'role': 'user', 'content': f"### Generated code:\n\n{''.join(code_script)}\n\n### Execution result:\n\n{status_message['message']}"})
+                {'role': 'user', 'content': f"##### Generated code:\n\n{''.join(code_script)}\n\n##### Execution result:\n\n{status_message['message']}"})
             return await self.tool_use(new_prompt)
         else:
             base_prompt.append({'role': 'assistant', 'content': base_response})
             base_prompt.append(
-                {'role': 'user', 'content': f"### Generated code:\n\n{''.join(code_script)}\n\n### Execution result:\n\n{status_message['message']}"})
+                {'role': 'user', 'content': f"##### Generated code:\n\n{''.join(code_script)}\n\n##### Execution result:\n\n{status_message['message']}"})
             final_response = run_inference(
                 base_prompt, self.output_text_area, self.root, self.model_var.get())
             base_prompt.append(
@@ -408,7 +464,7 @@ class FlexiAIApp:
     async def decide_execution(self, base_prompt: List[dict]):
         base_response = run_inference(
             base_prompt, self.output_text_area, self.root, self.model_var.get())
-        use_script = self.extract_code(base_response, 'json')
+        use_script = self.extract_code_blocks(base_response, 'json')
         if not use_script:
             correction_prompt = base_prompt.copy()
             correction_prompt.append(
@@ -442,7 +498,6 @@ class FlexiAIApp:
                     {'role': 'user', 'content': "Please produce a JSON object with 'use' key and python or tool as 'value'."})
                 return await self.decide_execution(correction_prompt)
 
-    # ----------------- User Interaction Methods -----------------
     def submit_text(self) -> None:
         user_input = self.input_text_area.get("1.0", "end-1c")
         if not user_input.strip():
@@ -455,37 +510,42 @@ class FlexiAIApp:
 
         def run_mode_inference():
             mode = self.mode_var.get().lower()
-            if mode == "generic":
-                response = run_inference(
-                    self.text_prompt, self.output_text_area, self.root, self.model_var.get())
-                self.text_prompt.append(
-                    {'role': 'assistant', 'content': response})
-            elif mode == "tool":
-                result_tuple = asyncio.run(self.tool_use(self.text_prompt))
-                response = "".join(result_tuple[0]) if isinstance(
-                    result_tuple[0], list) else result_tuple[0]
-                self.text_prompt.append(
-                    {'role': 'assistant', 'content': response})
-            elif mode == "code":
-                result_tuple = asyncio.run(self.code_use(self.text_prompt))
-                response = "".join(result_tuple[0]) if isinstance(
-                    result_tuple[0], list) else result_tuple[0]
-                self.text_prompt.append(
-                    {'role': 'assistant', 'content': response})
-            elif mode == "auto":
-                result = asyncio.run(self.decide_execution(self.text_prompt))
-                response = result
-                self.text_prompt.append(
-                    {'role': 'assistant', 'content': response})
-            else:
-                response = run_inference(
-                    self.text_prompt, self.output_text_area, self.root, self.model_var.get())
-                self.text_prompt.append(
-                    {'role': 'assistant', 'content': response})
-            self.update_assistant_response_history()
-            self.input_text_area.delete("1.0", tk.END)
-            self.submit_button.config(state=tk.NORMAL)
-            self.history_manager.save_history(self.text_prompt)
+            try:
+                if mode == "generic":
+                    response = run_inference(
+                        self.text_prompt, self.output_text_area, self.root, self.model_var.get())
+                    self.text_prompt.append(
+                        {'role': 'assistant', 'content': response})
+                elif mode == "tool":
+                    result_tuple = asyncio.run(self.tool_use(self.text_prompt))
+                    response = "".join(result_tuple[0]) if isinstance(
+                        result_tuple[0], list) else result_tuple[0]
+                    self.text_prompt.append(
+                        {'role': 'assistant', 'content': response})
+                elif mode == "code":
+                    result_tuple = asyncio.run(self.code_use(self.text_prompt))
+                    response = "".join(result_tuple[0]) if isinstance(
+                        result_tuple[0], list) else result_tuple[0]
+                    self.text_prompt.append(
+                        {'role': 'assistant', 'content': response})
+                elif mode == "auto":
+                    result = asyncio.run(
+                        self.decide_execution(self.text_prompt))
+                    response = result
+                    self.text_prompt.append(
+                        {'role': 'assistant', 'content': response})
+                else:
+                    response = run_inference(
+                        self.text_prompt, self.output_text_area, self.root, self.model_var.get())
+                    self.text_prompt.append(
+                        {'role': 'assistant', 'content': response})
+                self.update_assistant_response_history()
+            except Exception as e:
+                logging.error(f"Error during inference: {e}")
+            finally:
+                self.input_text_area.delete("1.0", tk.END)
+                self.submit_button.config(state=tk.NORMAL)
+                self.history_manager.save_history(self.text_prompt)
 
         threading.Thread(target=run_mode_inference).start()
 
@@ -550,13 +610,12 @@ class FlexiAIApp:
         self.input_text_area.delete("1.0", tk.END)
         self.output_text_area.delete("1.0", tk.END)
         self.history_manager.save_history(self.text_prompt)
-        print("Conversation cleared.")
+        logging.info("Conversation cleared.")
 
     def extract_code_snippets(self) -> None:
         language = self.code_language_var.get()
         output_text = self.output_text_area.get("1.0", "end-1c")
-        pattern = rf"```{re.escape(language)}\s*\n(.*?)```"
-        snippets = re.findall(pattern, output_text, re.DOTALL)
+        snippets = self.extract_code_blocks(output_text, language)
         extract_window = tk.Toplevel(self.root)
         extract_window.title(
             f"Extracted {language.capitalize()} Code Snippets")
@@ -583,16 +642,19 @@ class FlexiAIApp:
         def save_selected_snippet():
             selection = snippet_listbox.curselection()
             if not selection:
-                print("No snippet selected.")
+                logging.info("No snippet selected.")
                 return
             index = int(selection[0])
             snippet = snippets[index]
             file_path = filedialog.asksaveasfilename(title="Save Snippet", defaultextension=".txt",
                                                      filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
             if file_path:
-                with open(file_path, "w", encoding="utf-8") as f:
-                    f.write(snippet)
-                print(f"Snippet saved to {file_path}")
+                try:
+                    with open(file_path, "w", encoding="utf-8") as f:
+                        f.write(snippet)
+                    logging.info(f"Snippet saved to {file_path}")
+                except Exception as e:
+                    logging.error(f"Error saving snippet: {e}")
         tk.Button(extract_window, text="Save Selected Snippet",
                   command=save_selected_snippet).pack(pady=5)
 
@@ -600,7 +662,7 @@ class FlexiAIApp:
             def execute_selected_snippet():
                 selection = snippet_listbox.curselection()
                 if not selection:
-                    print("No snippet selected.")
+                    logging.info("No snippet selected.")
                     return
                 index = int(selection[0])
                 snippet = snippets[index]
@@ -638,7 +700,7 @@ class FlexiAIApp:
         text = self.output_text_area.get("1.0", "end-1c")
         files = self.extract_suggested_files(text)
         if not files:
-            print("No suggested files found in output.")
+            logging.info("No suggested files found in output.")
             return
         base_dir = self.codebase_path_entry.get().strip() or "suggested_files"
         if not os.path.exists(base_dir):
@@ -649,9 +711,9 @@ class FlexiAIApp:
             try:
                 with open(full_path, "w", encoding="utf-8") as f:
                     f.write(code)
-                print(f"Saved {full_path}")
+                logging.info(f"Saved {full_path}")
             except Exception as e:
-                print(f"Error saving {full_path}: {e}")
+                logging.error(f"Error saving {full_path}: {e}")
 
     def ensure_default_system_prompt(self) -> None:
         folder = "gag/system_prompts"
@@ -691,7 +753,7 @@ class FlexiAIApp:
             self.system_text_area.insert("1.0", content)
             self.text_prompt[0]["content"] = content
         except Exception as e:
-            print(f"Error loading system prompt: {e}")
+            logging.error(f"Error loading system prompt: {e}")
 
     def save_system_prompt_as_new(self) -> None:
         prompt_name = self.prompt_name_entry.get().strip()
@@ -704,22 +766,22 @@ class FlexiAIApp:
         try:
             with open(file_path, "w", encoding="utf-8") as f:
                 f.write(content)
-            print(f"System prompt saved as {file_path}")
+            logging.info(f"System prompt saved as {file_path}")
         except Exception as e:
-            print(f"Error saving system prompt: {e}")
+            logging.error(f"Error saving system prompt: {e}")
         self.update_system_prompts_dropdown()
 
     def delete_system_prompt_file(self) -> None:
         file_name = self.system_prompt_var.get()
         if file_name == "flexi.txt":
-            print("Cannot delete the default system prompt.")
+            logging.info("Cannot delete the default system prompt.")
             return
         file_path = os.path.join("gag/system_prompts", file_name)
         try:
             os.remove(file_path)
-            print(f"Deleted system prompt: {file_path}")
+            logging.info(f"Deleted system prompt: {file_path}")
         except Exception as e:
-            print(f"Error deleting system prompt: {e}")
+            logging.error(f"Error deleting system prompt: {e}")
         self.update_system_prompts_dropdown()
 
     def load_history(self) -> None:
@@ -738,7 +800,7 @@ class FlexiAIApp:
             self.update_user_input_history()
             self.update_assistant_response_history()
         except Exception as e:
-            print(f"Error loading history file: {e}")
+            logging.error(f"Error loading history file: {e}")
 
     def save_history(self) -> None:
         history_dir = self.history_manager.history_dir
@@ -757,9 +819,9 @@ class FlexiAIApp:
         try:
             with open(history_path, "w", encoding="utf-8") as f:
                 json.dump(self.text_prompt, f, indent=4)
-            print(f"History saved to {history_path}")
+            logging.info(f"History saved to {history_path}")
         except Exception as e:
-            print(f"Error saving history: {e}")
+            logging.error(f"Error saving history: {e}")
         self.update_history_dropdown()
 
     def auto_save_history(self) -> None:
@@ -777,9 +839,9 @@ class FlexiAIApp:
         try:
             with open(history_path, "w", encoding="utf-8") as f:
                 json.dump(self.text_prompt, f, indent=4)
-            print(f"History automatically saved to {history_path}")
+            logging.info(f"History automatically saved to {history_path}")
         except Exception as e:
-            print(f"Error auto-saving history: {e}")
+            logging.error(f"Error auto-saving history: {e}")
         self.update_history_dropdown()
 
     def update_history_dropdown(self) -> None:
@@ -798,21 +860,21 @@ class FlexiAIApp:
     def delete_history(self) -> None:
         selected_file = self.history_var.get()
         if selected_file == "No history files":
-            print("No history file selected to delete.")
+            logging.info("No history file selected to delete.")
             return
         history_path = os.path.join(
             self.history_manager.history_dir, selected_file)
         try:
             os.remove(history_path)
-            print(f"Deleted history file: {history_path}")
+            logging.info(f"Deleted history file: {history_path}")
             self.update_history_dropdown()
         except Exception as e:
-            print(f"Error deleting history file: {e}")
+            logging.error(f"Error deleting history file: {e}")
 
     def view_history(self) -> None:
         selected_file = self.history_var.get()
         if selected_file == "No history files":
-            print("No history file selected to view.")
+            logging.info("No history file selected to view.")
             return
         history_path = os.path.join(
             self.history_manager.history_dir, selected_file)
@@ -820,7 +882,7 @@ class FlexiAIApp:
             with open(history_path, "r", encoding="utf-8") as f:
                 content = f.read()
         except Exception as e:
-            print(f"Error reading history file: {e}")
+            logging.error(f"Error reading history file: {e}")
             return
         view_window = tk.Toplevel(self.root)
         view_window.title(f"View History: {selected_file}")
@@ -830,25 +892,6 @@ class FlexiAIApp:
         scrollbar.pack(side="right", fill="y")
         text_widget.config(yscrollcommand=scrollbar.set)
         text_widget.insert("1.0", content)
-
-    # -------------- Helper Functions Outside the Class --------------
-
-
-def extract_code(text: str, language: str = 'python') -> list:
-    """
-    Extracts code blocks of the specified programming language from the given text.
-    Uses triple backticks and a language specifier.
-    Args:
-        text (str): The full text possibly containing code blocks.
-        language (str): The language to look for.
-    Returns:
-        List[str]: A list of code block strings.
-    """
-    triple_backticks = "```"
-    pattern = rf'{triple_backticks}{language}\s*\n(.*?){triple_backticks}'
-    code_blocks = re.findall(pattern, text, re.DOTALL)
-    return code_blocks
-
 
 
 def execute_python_code(code: str) -> dict:
@@ -894,28 +937,27 @@ def execute_tool(instruction: dict) -> dict:
     result = {"status": "", "message": ""}
     tool_name = instruction.get('tool')
     if not tool_name:
-        print("No tool specified in the instruction.")
+        logging.error("No tool specified in the instruction.")
         result['status'] = "500"
         result['message'] = "Error: No tool specified."
         return result
-    # Import tool_registry from system_prompts
     from simple.code.system_prompts import tool_registry
     tool_func = tool_registry.get(tool_name)
     if not tool_func:
-        print(f"Tool {tool_name} not found in registry.")
+        logging.error(f"Tool {tool_name} not found in registry.")
         result['status'] = "500"
         result['message'] = f"Error: Tool {tool_name} not found."
         return result
     params = instruction.get('parameters')
     try:
-        print(f"Executing tool: {tool_name} with parameters: {params}")
+        logging.info(f"Executing tool: {tool_name} with parameters: {params}")
         output = tool_func(params)
         if output is None:
             raise Exception("Tool returned None (possibly an error).")
         result['status'] = "200"
         result['message'] = f"Execution successful\nResult:\n{output}"
     except Exception as e:
-        print(f"Error executing tool {tool_name}: {e}")
+        logging.error(f"Error executing tool {tool_name}: {e}")
         result['status'] = "500"
         result['message'] = f"Execution failed:\n{str(e)}"
     return result

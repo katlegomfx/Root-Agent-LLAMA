@@ -2,6 +2,9 @@ import os
 import json
 from datetime import datetime
 from typing import Any, List, Optional
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 
 class HistoryManager:
@@ -26,9 +29,10 @@ class HistoryManager:
         try:
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(history_data, f, indent=4)
+            logging.info(f"History saved to {path}")
             return path
         except Exception as e:
-            print(f"Error saving history: {e}")
+            logging.error(f"Error saving history: {e}")
             return None
 
     def load_history(self, filename: str) -> Optional[Any]:
@@ -37,9 +41,10 @@ class HistoryManager:
             with open(path, "r", encoding="utf-8") as f:
                 history = json.load(f)
             self.current_file = filename
+            logging.info(f"History loaded from {path}")
             return history
         except Exception as e:
-            print(f"Error loading history from {path}: {e}")
+            logging.error(f"Error loading history from {path}: {e}")
             return None
 
     def delete_history(self, filename: str) -> None:
@@ -47,7 +52,8 @@ class HistoryManager:
         try:
             if os.path.exists(path):
                 os.remove(path)
+                logging.info(f"Deleted history file: {path}")
             else:
-                print(f"History file {path} does not exist.")
+                logging.warning(f"History file {path} does not exist.")
         except Exception as e:
-            print(f"Error deleting history file {path}: {e}")
+            logging.error(f"Error deleting history file {path}: {e}")

@@ -1,21 +1,24 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+import logging
 from typing import List
+
+logging.basicConfig(level=logging.INFO)
 
 
 def create_artistic_png(data: List[float], filename: str = "gag/artistic_plot.png", style: str = "seaborn-darkgrid") -> None:
     """
     Creates an artistic PNG image from the provided data using a specified style.
-
-    If the given style is not available, it will use the default style instead.
-
+    
+    If the given style is not available, the default style is used.
+    
     Enhancements:
     - Uses a custom style if available.
     - Colors data points using a colormap.
     - Combines scatter and line plots.
     - Adds annotations for each data point.
-
+    
     Args:
         data (List[float]): List of numeric values to plot.
         filename (str, optional): Output file path for the PNG image.
@@ -25,12 +28,13 @@ def create_artistic_png(data: List[float], filename: str = "gag/artistic_plot.pn
     output_dir = os.path.dirname(filename)
     if output_dir and not os.path.exists(output_dir):
         os.makedirs(output_dir, exist_ok=True)
+        logging.info(f"Created directory {output_dir} for output image.")
 
     available_styles = plt.style.available
     if style in available_styles:
         plt.style.use(style)
     else:
-        print(
+        logging.warning(
             f"Style '{style}' is not available. Using default style instead.")
 
     fig, ax = plt.subplots(figsize=(10, 8))
@@ -49,8 +53,13 @@ def create_artistic_png(data: List[float], filename: str = "gag/artistic_plot.pn
         ax.annotate(f'{value}', xy=(i, value), xytext=(5, 5),
                     textcoords='offset points', fontsize=10, color='darkred')
 
-    plt.savefig(filename, format="png", dpi=300, bbox_inches='tight')
-    plt.close()
+    try:
+        plt.savefig(filename, format="png", dpi=300, bbox_inches='tight')
+        logging.info(f"Artistic PNG image saved as '{filename}'.")
+    except Exception as e:
+        logging.error(f"Failed to save image {filename}: {e}")
+    finally:
+        plt.close()
 
 
 if __name__ == "__main__":
