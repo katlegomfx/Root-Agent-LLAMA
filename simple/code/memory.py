@@ -5,7 +5,9 @@ from tqdm import tqdm
 import chromadb
 import json
 
+logging.basicConfig(level=logging.INFO)
 chroma_client = chromadb.Client()
+
 
 def get_or_create_collection(collection='conversations'):
     return chroma_client.get_or_create_collection(name=collection)
@@ -33,7 +35,8 @@ def embedText(writtenText, model='nomic-embed-text'):
                 decoded_list = decoded_dict['embedding']
         return decoded_list
     except Exception as e:
-        pass
+        logging.error(f"Error generating embedding: {e}")
+        return None
 
 
 def classify_embedding(query, context):
@@ -41,7 +44,7 @@ def classify_embedding(query, context):
         'You are an embedding classification AI agent. Your input will be a prompt and one embedded chunk of text. '
         'You will not respond as an AI assistant. You only respond "yes" or "no". '
         'Determine whether the context contains data that directly is related to the search query. '
-        'If the context is seemingly exactly what the search query needs, respond "yes" if it is anything but directly'
+        'If the context is seemingly exactly what the search query needs, respond "yes" if it is anything but directly '
         'related respond "no". Do not respond "yes" unless the content is highly relevant to the search query.'
     )
     classify_convo = [
@@ -50,7 +53,8 @@ def classify_embedding(query, context):
         {'role': 'assistant', 'content': 'yes'},
         {'role': 'user', 'content': f'SEARCH QUERY: Llama3 Python Voice Assistant \n\nEMBEDDED CONTEXT: Siri is a voice assistant on Apple iOS and Mac OS. The voice assistant is designed to take voice prompts and help the user complete simple tasks on the device.'},
         {'role': 'assistant', 'content': 'no'},
-        {'role': 'user', 'content': f'SEARCH QUERY: {query} \n\nEMBEDDED CONTEXT: {context} '}]
+        {'role': 'user', 'content': f'SEARCH QUERY: {query} \n\nEMBEDDED CONTEXT: {context} '}
+    ]
     user_input = f'SEARCH QUERY: {query} \n\nEMBEDDED CONTEXT: {context} '
     classify_convo.append({'role': "user", 'content': user_input})
     response = run_inference(user_input, classify_convo)
@@ -79,8 +83,8 @@ def create_queries(prompt):
         'you have ever had with the user. With first principles create a Python list of queries to '
         'search the embeddings database for any data that would be necessary to have access to in '
         'order to correctly respond to the prompt. Your response must be a Python list with no syntax errors.'
-        'Do not explain anything and do not ever generate anything but a perfect syntax Python list')
-
+        'Do not explain anything and do not ever generate anything but a perfect syntax Python list'
+    )
     query_convo = [
         {'role': 'system', 'content': query_message},
         {'role': 'user', 'content': 'Write an email to my car insurance company and create a persuasive request for them to lower my rates.'},
@@ -94,7 +98,8 @@ def create_queries(prompt):
     response = run_inference(query_convo)
     try:
         return ast.literal_eval(response)
-    except:
+    except Exception as e:
+        logging.error(f"Error parsing queries: {e}")
         return [prompt]
 
 
@@ -107,11 +112,10 @@ def create_vector_db(conversations, vector_db_name='conversations'):
     vector_db = chroma_client.create_collection(name=vector_db_name)
     for c in conversations:
         serialized_convo = f'prompt: {c["prompt"]} response: {c["response"]}'
-        embededText = embedText(serialized_convo)
-        vector_db.add(
-            ids=[f"{c['id']}"],
-            embeddings=[embededText],
-            documents=[serialized_convo])
+        embeddedText = embedText(serialized_convo)
+        vector_db.add(ids=[f"{c['id']}"], embeddings=[
+                      embeddedText], documents=[serialized_convo])
+
 
 def example_usage(user_input):
     queries = create_queries(user_input)

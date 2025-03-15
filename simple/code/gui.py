@@ -119,6 +119,35 @@ class FlexiAIApp:
                 self.update_assistant_response_history()
                 logging.info(f"Loaded history from {first_history}")
 
+
+    def search_history(self) -> None:
+        """Opens a dialog to search conversation history and display matching entries."""
+        def do_search():
+            query = search_entry.get().strip().lower()
+            results.delete(0, tk.END)
+            # Combine user and assistant messages
+            matching = [line for line in self.text_prompt if query in line.get(
+                "content", "").lower()]
+            if not matching:
+                results.insert(tk.END, "No matching entries found.")
+            else:
+                for idx, entry in enumerate(matching, start=1):
+                    # Display a truncated version for brevity
+                    content = entry.get("content", "")
+                    results.insert(tk.END, f"{idx}: {content[:80]}...")
+
+        search_window = tk.Toplevel(self.root)
+        search_window.title("Search Conversation History")
+        tk.Label(search_window, text="Enter search query:").pack(padx=5, pady=5)
+        search_entry = tk.Entry(search_window, width=50)
+        search_entry.pack(padx=5, pady=5)
+        tk.Button(search_window, text="Search",
+                command=do_search).pack(padx=5, pady=5)
+        results = tk.Listbox(search_window, width=100, height=10)
+        results.pack(padx=5, pady=5, fill="both", expand=True)
+
+
+
     def setup_ui(self) -> None:
         top_bar = tk.Frame(self.root)
         top_bar.pack(fill="x", padx=5, pady=5)
@@ -241,6 +270,9 @@ class FlexiAIApp:
         tk.Button(history_frame, text="Save History", command=self.save_history).grid(
             row=1, column=2, padx=5, pady=5)
         history_frame.grid_columnconfigure(0, weight=1)
+        tk.Button(history_frame, text="Search History", command=self.search_history).grid(
+            row=0, column=5, padx=5, pady=5)
+
 
         code_append_section = CollapsibleSection(
             self.root, title="Code Append")
