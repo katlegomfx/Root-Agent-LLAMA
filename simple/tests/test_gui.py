@@ -3,7 +3,7 @@ import tkinter as tk
 
 from simple.code.gui import FlexiAIApp
 
-# Dummy manager classes to isolate the GUI tests from file I/O.
+{MD_HEADING} Dummy manager classes to isolate the GUI tests from file I/O.
 
 
 class DummyHistoryManager:
@@ -23,10 +23,8 @@ class TestFlexiAIApp(unittest.TestCase):
     def setUp(self):
         self.root = tk.Tk()
         self.app = FlexiAIApp(self.root)
-        # Override managers for isolation.
         self.app.history_manager = DummyHistoryManager()
         self.app.prompt_manager = DummySystemPromptManager()
-        # Pre-fill the entries to simulate user input.
         self.app.codebase_path_entry.delete(0, tk.END)
         self.app.codebase_path_entry.insert(0, "")
         self.app.tips_entry.delete("1.0", tk.END)

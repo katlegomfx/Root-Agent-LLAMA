@@ -2,6 +2,8 @@ import os
 import re
 from typing import List
 
+from simple.code.system_prompts import MD_HEADING
+
 
 def get_py_files_recursive(directory: str, exclude_dirs: List[str] = None, exclude_files: List[str] = None) -> List[str]:
     """
@@ -41,8 +43,7 @@ def read_file_content(path: str) -> str:
     try:
         with open(path, 'r', encoding='utf-8') as f:
             content = f.read()
-        # Adjust header markers for consistency
-        return content.replace('######### ', '########## ')
+        return content.replace(f'{MD_HEADING} ', f'{MD_HEADING*2} ')
     except Exception as e:
         print(f"Error reading file {path}: {e}")
         return ""
@@ -68,7 +69,7 @@ def code_corpus(directory: str) -> List[str]:
     for file_path in file_paths:
         try:
             text = read_file_content(file_path)
-            corpus.append(f'\n########## {file_path}:\n{text}\n')
+            corpus.append(f'\n{MD_HEADING} {file_path}:\n{text}\n')
         except Exception as e:
             print(f"Error processing {file_path}: {e}")
     return corpus

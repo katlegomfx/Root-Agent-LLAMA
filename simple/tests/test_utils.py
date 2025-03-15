@@ -7,7 +7,6 @@ from simple.code import utils
 
 class TestUtils(unittest.TestCase):
     def setUp(self):
-        # Create a temporary directory with some dummy Python files
         self.test_dir = tempfile.TemporaryDirectory()
         self.file1_path = os.path.join(self.test_dir.name, "file1.py")
         self.file2_path = os.path.join(self.test_dir.name, "file2.py")

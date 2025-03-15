@@ -8,7 +8,6 @@ from simple.code.history import HistoryManager
 
 class TestHistoryManager(unittest.TestCase):
     def setUp(self):
-        # Create a temporary directory for history files
         self.test_dir = tempfile.TemporaryDirectory()
         self.history_manager = HistoryManager(history_dir=self.test_dir.name)
 
@@ -24,7 +23,6 @@ class TestHistoryManager(unittest.TestCase):
         file_path = self.history_manager.save_history(test_history)
         self.assertTrue(os.path.exists(file_path))
 
-        # Now load the history
         loaded_history = self.history_manager.load_history(
             os.path.basename(file_path))
         self.assertEqual(loaded_history, test_history)

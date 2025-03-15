@@ -1,3 +1,5 @@
+from simple.code import utils, memory
+from simple.code.system_prompts import MD_HEADING  # ensure MD_HEADING is imported
 import tkinter as tk
 from tkinter import filedialog
 import threading
@@ -16,7 +18,7 @@ from typing import List
 from simple.code import utils
 from simple.code.inference import run_inference, current_client
 from simple.code.history import HistoryManager
-from simple.code.system_prompts import load_message_template
+from simple.code.system_prompts import MD_HEADING, load_message_template
 
 logging.basicConfig(level=logging.INFO)
 
@@ -64,9 +66,7 @@ class FlexiAIApp:
         self.root.geometry("600x1000")
         self.is_dark_mode = False
         self.set_app_icon()
-        # List to store all collapsible sections
         self.collapsible_sections = []
-        # Global flag indicating whether all sections are currently expanded
         self.all_sections_expanded = True
 
         self.text_prompt = [{
@@ -79,12 +79,12 @@ class FlexiAIApp:
         self.assistant_response_history_index = None
         self.current_history_file = ""
 
-        self.history_manager = HistoryManager()  # Uses directory "gag/history"
+        self.history_manager = HistoryManager()  
         self.model_map = {'llama3.2': ()}
         self.setup_ui()
-        self.auto_save_interval_ms = 5 * 60 * 1000  # 5 minutes
+        self.auto_save_interval_ms = 5 * 60 * 1000  
         self.schedule_auto_save()
-        self.load_first_history()  # Load the first history file if available
+        self.load_first_history()  
 
     def set_app_icon(self) -> None:
         try:
@@ -111,7 +111,6 @@ class FlexiAIApp:
             if loaded_history:
                 self.text_prompt = loaded_history
                 self.current_history_file = first_history
-                # If the loaded history contains a system prompt, update the system text area.
                 if self.text_prompt and self.text_prompt[0].get("role") == "system":
                     self.system_text_area.delete("1.0", tk.END)
                     self.system_text_area.insert(
@@ -121,7 +120,6 @@ class FlexiAIApp:
                 logging.info(f"Loaded history from {first_history}")
 
     def setup_ui(self) -> None:
-        # Top Bar with new Toggle All button
         top_bar = tk.Frame(self.root)
         top_bar.pack(fill="x", padx=5, pady=5)
         tk.Button(top_bar, text="Toggle Theme",
@@ -129,7 +127,6 @@ class FlexiAIApp:
         tk.Button(top_bar, text="Toggle All",
                   command=self.toggle_all_sections).pack(side="left", padx=5)
 
-        # Model Selection Section
         model_section = CollapsibleSection(self.root, title="Model Selection")
         self.collapsible_sections.append(model_section)
         model_section.pack(fill="x", padx=5, pady=5)
@@ -142,7 +139,6 @@ class FlexiAIApp:
         tk.OptionMenu(model_frame, self.model_var, *
                       model_options).grid(row=0, column=1, padx=5, pady=5)
 
-        # System Prompt Section
         system_section = CollapsibleSection(self.root, title="System Prompt")
         self.collapsible_sections.append(system_section)
         system_section.pack(fill="x", padx=5, pady=5)
@@ -156,7 +152,6 @@ class FlexiAIApp:
                   command=self.update_system_prompt).grid(row=1, column=1, sticky="e")
         system_frame.grid_columnconfigure(0, weight=1)
 
-        # System Prompt Management Section
         sp_mgmt_section = CollapsibleSection(
             self.root, title="System Prompt Management")
         self.collapsible_sections.append(sp_mgmt_section)
@@ -183,7 +178,6 @@ class FlexiAIApp:
         sp_mgmt_frame.grid_columnconfigure(1, weight=1)
         self.update_system_prompts_dropdown()
 
-        # Message Template Section
         template_section = CollapsibleSection(
             self.root, title="Message Template")
         self.collapsible_sections.append(template_section)
@@ -205,20 +199,18 @@ class FlexiAIApp:
             row=0, column=2, padx=5, pady=5)
         template_frame.grid_columnconfigure(1, weight=1)
 
-        # Execution Mode Section
         mode_section = CollapsibleSection(self.root, title="Execution Mode")
         self.collapsible_sections.append(mode_section)
         mode_section.pack(fill="x", padx=5, pady=5)
         mode_frame = mode_section.content_frame
         tk.Label(mode_frame, text="Select Mode:").grid(
             row=0, column=0, sticky="w")
-        self.mode_var = tk.StringVar(mode_frame, value="generic")
-        mode_options = ["generic", "auto", "tool", "code"]
+        self.mode_var = tk.StringVar(mode_frame, value="base")
+        mode_options = ["auto", "tool", "code", "base"]
         tk.OptionMenu(mode_frame, self.mode_var, *
                       mode_options).grid(row=0, column=1, padx=5, pady=5)
         mode_frame.grid_columnconfigure(1, weight=1)
 
-        # History Section
         history_section = CollapsibleSection(self.root, title="History")
         self.collapsible_sections.append(history_section)
         history_section.pack(fill="x", padx=5, pady=5)
@@ -250,7 +242,6 @@ class FlexiAIApp:
             row=1, column=2, padx=5, pady=5)
         history_frame.grid_columnconfigure(0, weight=1)
 
-        # Code Append Section
         code_append_section = CollapsibleSection(
             self.root, title="Code Append")
         self.collapsible_sections.append(code_append_section)
@@ -267,7 +258,6 @@ class FlexiAIApp:
         self.tips_entry.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
         code_append_frame.grid_columnconfigure(1, weight=1)
 
-        # Input Section
         input_section = CollapsibleSection(self.root, title="Input")
         self.collapsible_sections.append(input_section)
         input_section.pack(fill="x", padx=5, pady=5)
@@ -289,7 +279,6 @@ class FlexiAIApp:
                   command=self.clear_conversation).pack(fill="x", pady=5)
         input_frame.grid_columnconfigure(0, weight=1)
 
-        # Output Section
         output_section = CollapsibleSection(self.root, title="Output")
         self.collapsible_sections.append(output_section)
         output_section.pack(fill="both", expand=True, padx=5, pady=5)
@@ -307,7 +296,6 @@ class FlexiAIApp:
         self.output_text_area.pack(fill="both", expand=True)
         output_scrollbar.config(command=self.output_text_area.yview)
 
-        # Code Extraction Section
         code_extraction_section = CollapsibleSection(
             self.root, title="Code Extraction")
         self.collapsible_sections.append(code_extraction_section)
@@ -328,7 +316,6 @@ class FlexiAIApp:
     def toggle_all_sections(self) -> None:
         """Toggle expand/collapse state for all collapsible sections."""
         for section in self.collapsible_sections:
-            # Collapse if all are expanded; otherwise expand
             if self.all_sections_expanded and section.show.get():
                 section.toggle()
             elif not self.all_sections_expanded and not section.show.get():
@@ -349,7 +336,7 @@ class FlexiAIApp:
 
     def toggle_theme(self) -> None:
         self.is_dark_mode = not self.is_dark_mode
-        bg_color = "#2e2e2e" if self.is_dark_mode else "SystemButtonFace"
+        bg_color = f"{MD_HEADING}2e2e2e" if self.is_dark_mode else "SystemButtonFace"
         fg_color = "white" if self.is_dark_mode else "black"
         self.root.configure(bg=bg_color)
         apply_theme_recursive(self.root, bg_color, fg_color)
@@ -376,7 +363,34 @@ class FlexiAIApp:
             msg["content"] for msg in self.text_prompt if msg.get("role") == "assistant"]
         self.assistant_response_history_index = None
 
+
+    def get_memory_context(self, user_request: str) -> str:
+        """
+        Retrieves a formatted memory context block based on the current user request.
+        It leverages memory.create_queries() and memory.retrieve_embeddings() functions.
+        Returns a string that can be prepended to the prompt.
+        """
+        memory_context = ""
+        try:
+            # Generate search queries from the current user request
+            queries = memory.create_queries(user_request)
+            # Retrieve relevant memory embeddings (returns a set of context strings)
+            embeddings = memory.retrieve_embeddings(queries)
+            if embeddings:
+                # Join the embeddings into a single memory context block
+                memory_context = f"\nMEMORIES: {', '.join(embeddings)}\n\n"
+        except Exception as e:
+            logging.error(f"Error retrieving memory: {e}")
+        return memory_context
+
+
     def build_full_prompt(self, user_request: str) -> str:
+        """
+        Builds the full prompt to be sent for inference. This version enhances the prompt by:
+        - Including codebase context (if a codebase path is provided)
+        - Retrieving relevant memory (using functions from memory.py)
+        - Appending any additional tips provided by the user
+        """
         codebase_path = self.codebase_path_entry.get().strip()
         base_code = ""
         if codebase_path:
@@ -385,8 +399,21 @@ class FlexiAIApp:
                 base_code = "\n".join(base_code_list)
             except Exception as e:
                 logging.error(f"Error reading codebase: {e}")
+
         tips = self.tips_entry.get("1.0", "end-1c").strip()
-        return f"########## Codebase:\n\n{base_code}\n\n########## {user_request}\n\n{tips}"
+
+        # --- Integrate memory retrieval ---
+        memory_context = self.get_memory_context(user_request)
+        # --- Build the final prompt ---
+        if base_code != "" and tips != "":
+            full_prompt = f"{MD_HEADING} Codebase:\n\n{base_code}\n\n{memory_context}{MD_HEADING} {user_request}\n\n{tips}"
+        elif base_code != "":
+            full_prompt = f"{MD_HEADING} Codebase:\n\n{base_code}\n\n{memory_context}{MD_HEADING} {user_request}"
+        else:
+            full_prompt = f"{memory_context}{MD_HEADING} {user_request}"
+
+        return full_prompt
+
 
     @staticmethod
     def extract_code_blocks(text: str, language: str) -> list:
@@ -425,7 +452,7 @@ class FlexiAIApp:
                 new_prompt.append(
                     {'role': 'assistant', 'content': json.dumps(base_response)})
                 new_prompt.append(
-                    {'role': 'user', 'content': f"##### Generated tool instruction:\n\n{json.dumps(tool_script)}\n\n##### Execution result:\n\n{status_message['message']}\n\n##### Fix the above error"})
+                    {'role': 'user', 'content': f"{MD_HEADING} Generated tool instruction:\n\n{json.dumps(tool_script)}\n\n{MD_HEADING} Execution result:\n\n{status_message['message']}\n\n{MD_HEADING} Fix the above error"})
                 return await self.tool_use(new_prompt)
             else:
                 base_prompt.append(
@@ -433,7 +460,7 @@ class FlexiAIApp:
                 status_messages.append(status_message)
             final_prompt = base_prompt.copy()
             final_prompt.append(
-                {'role': 'user', 'content': f"##### Generated tool instruction:\n\n{code_snippet}\n\n##### Execution result:\n\n{status_message['message']}"})
+                {'role': 'user', 'content': f"{MD_HEADING} Generated tool instruction:\n\n{code_snippet}\n\n{MD_HEADING} Execution result:\n\n{status_message['message']}"})
             final_response = run_inference(
                 final_prompt, self.output_text_area, self.root, self.model_var.get())
             base_prompt.append(
@@ -449,12 +476,12 @@ class FlexiAIApp:
             new_prompt = base_prompt.copy()
             new_prompt.append({'role': 'assistant', 'content': base_response})
             new_prompt.append(
-                {'role': 'user', 'content': f"##### Generated code:\n\n{''.join(code_script)}\n\n##### Execution result:\n\n{status_message['message']}"})
+                {'role': 'user', 'content': f"{MD_HEADING} Generated code:\n\n{''.join(code_script)}\n\n{MD_HEADING} Execution result:\n\n{status_message['message']}"})
             return await self.tool_use(new_prompt)
         else:
             base_prompt.append({'role': 'assistant', 'content': base_response})
             base_prompt.append(
-                {'role': 'user', 'content': f"##### Generated code:\n\n{''.join(code_script)}\n\n##### Execution result:\n\n{status_message['message']}"})
+                {'role': 'user', 'content': f"{MD_HEADING} Generated code:\n\n{''.join(code_script)}\n\n{MD_HEADING} Execution result:\n\n{status_message['message']}"})
             final_response = run_inference(
                 base_prompt, self.output_text_area, self.root, self.model_var.get())
             base_prompt.append(
@@ -510,13 +537,9 @@ class FlexiAIApp:
 
         def run_mode_inference():
             mode = self.mode_var.get().lower()
+            response = ""
             try:
-                if mode == "generic":
-                    response = run_inference(
-                        self.text_prompt, self.output_text_area, self.root, self.model_var.get())
-                    self.text_prompt.append(
-                        {'role': 'assistant', 'content': response})
-                elif mode == "tool":
+                if mode == "tool":
                     result_tuple = asyncio.run(self.tool_use(self.text_prompt))
                     response = "".join(result_tuple[0]) if isinstance(
                         result_tuple[0], list) else result_tuple[0]
@@ -529,9 +552,7 @@ class FlexiAIApp:
                     self.text_prompt.append(
                         {'role': 'assistant', 'content': response})
                 elif mode == "auto":
-                    result = asyncio.run(
-                        self.decide_execution(self.text_prompt))
-                    response = result
+                    response = asyncio.run(self.decide_execution(self.text_prompt))
                     self.text_prompt.append(
                         {'role': 'assistant', 'content': response})
                 else:
@@ -540,6 +561,14 @@ class FlexiAIApp:
                     self.text_prompt.append(
                         {'role': 'assistant', 'content': response})
                 self.update_assistant_response_history()
+
+                # If the response is valid, add it to the vector DB:
+                if response and "Error" not in response:
+                    from simple.code.memory import add_response_to_db
+                    # Create a unique response ID using current timestamp.
+                    response_id = f"response_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                    add_response_to_db(response, response_id)
+
             except Exception as e:
                 logging.error(f"Error during inference: {e}")
             finally:
@@ -548,6 +577,7 @@ class FlexiAIApp:
                 self.history_manager.save_history(self.text_prompt)
 
         threading.Thread(target=run_mode_inference).start()
+
 
     def update_system_prompt(self) -> None:
         new_prompt = self.system_text_area.get("1.0", "end-1c")
@@ -646,8 +676,8 @@ class FlexiAIApp:
                 return
             index = int(selection[0])
             snippet = snippets[index]
-            file_path = filedialog.asksaveasfilename(title="Save Snippet", defaultextension=".txt",
-                                                     filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
+            file_path = filedialog.asksaveasfilename(title="Save Snippet", defaultextension=".py",
+                                                     filetypes=[("Python files", "*.py"), ("Text files", "*.txt"), ("All files", "*.*")])
             if file_path:
                 try:
                     with open(file_path, "w", encoding="utf-8") as f:
@@ -693,7 +723,7 @@ class FlexiAIApp:
                       command=execute_selected_snippet).pack(pady=5)
 
     def extract_suggested_files(self, text: str) -> list:
-        pattern = r"###\s*(.*?)\s*:\s*\n```(?:python)?\n(.*?)```"
+        pattern = rf"{MD_HEADING}\s*(.*?)\s*:\s*\n```(?:python)?\n(.*?)```"
         return re.findall(pattern, text, re.DOTALL)
 
     def save_suggested_files_from_output(self) -> None:

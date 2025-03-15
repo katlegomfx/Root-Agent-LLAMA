@@ -5,7 +5,6 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 
-# Global reference for the current inference session.
 current_client = None
 
 
@@ -48,7 +47,7 @@ class InferenceClient:
 def run_inference(messages: List[dict], widget: Any, root: Any, model_name: str) -> str:
     global current_client
     client = InferenceClient(model_name)
-    current_client = client  # Save reference for cancellation.
+    current_client = client  
     try:
         result = asyncio.run(client.chat(messages, widget, root))
     except Exception as e:

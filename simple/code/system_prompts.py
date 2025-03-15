@@ -8,7 +8,7 @@ logging.basicConfig(level=logging.INFO)
 
 DEFAULT_PROMPT_FILE = "flexi.txt"
 DEFAULT_PROMPT_CONTENT = "You are Flexi💻AI. You think step by step, keeping key points in mind to solve or answer the request."
-MD_HEADING = "###"
+MD_HEADING = "#"
 TRIPLE_BACKTICKS = "```"
 
 

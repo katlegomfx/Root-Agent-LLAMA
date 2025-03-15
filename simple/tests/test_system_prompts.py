@@ -7,7 +7,6 @@ from simple.code.system_prompts import DEFAULT_PROMPT_CONTENT, DEFAULT_PROMPT_FI
 
 class TestSystemPromptManager(unittest.TestCase):
     def setUp(self):
-        # Create a temporary directory for system prompts
         self.test_dir = tempfile.TemporaryDirectory()
         self.prompt_manager = SystemPromptManager(folder=self.test_dir.name)
 

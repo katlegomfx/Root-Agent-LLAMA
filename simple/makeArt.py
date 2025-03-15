@@ -24,7 +24,6 @@ def create_artistic_png(data: List[float], filename: str = "gag/artistic_plot.pn
         filename (str, optional): Output file path for the PNG image.
         style (str, optional): Matplotlib style to use.
     """
-    # Ensure the output directory exists.
     output_dir = os.path.dirname(filename)
     if output_dir and not os.path.exists(output_dir):
         os.makedirs(output_dir, exist_ok=True)
