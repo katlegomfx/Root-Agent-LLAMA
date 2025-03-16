@@ -1,0 +1,1609 @@
+{
+    "io_utils": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 4,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: load_history, store_history"
+        ]
+    },
+    "ai_requests": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 0,
+        "class_count": 1,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to classes: AIRequests"
+        ]
+    },
+    "cli_application": {
+        "unused_imports": [
+            "speech_recognition"
+        ],
+        "unused_variables": [],
+        "function_count": 7,
+        "class_count": 1,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: speech_recognition",
+            "Add docstrings to functions: __init__, load_history, store_history, get_completer, handle_sigint",
+            "Add docstrings to classes: CLIApplication"
+        ]
+    },
+    "cli_helpers": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 5,
+        "class_count": 2,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: get_completions, __init__, get_completions",
+            "Add docstrings to classes: FilePathCompleter, CLICompleter"
+        ]
+    },
+    "cli_requests": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 5,
+        "class_count": 1,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: list_sessions, update_options",
+            "Add docstrings to classes: CLIRequests"
+        ]
+    },
+    "user_requests": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 1,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: display_help",
+            "Add docstrings to classes: UserRequests"
+        ]
+    },
+    "control": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 11,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Consider refactoring; this module has 11 functions."
+        ]
+    },
+    "add_path": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 2,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: run_it"
+        ]
+    },
+    "code_cleaner": {
+        "unused_imports": [],
+        "unused_variables": [
+            "_"
+        ],
+        "function_count": 2,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": []
+    },
+    "dry_check": {
+        "unused_imports": [],
+        "unused_variables": [
+            "_"
+        ],
+        "function_count": 4,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": []
+    },
+    "dry_editor": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 3,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": []
+    },
+    "line_cleaner": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 3,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: main"
+        ]
+    },
+    "shared": {
+        "unused_imports": [],
+        "unused_variables": [
+            "UTILS_DIR",
+            "STORE_DIR",
+            "_",
+            "npm_path",
+            "config",
+            "node_path",
+            "venv_name",
+            "migrations_dir",
+            "db_name",
+            "npx_path",
+            "API_AUTH_DIR",
+            "role_low"
+        ],
+        "function_count": 32,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: create_redux_store_js, create_redux_reducer_js, get_input_type, generate_main_component_content_without, generate_main_component_content_with_state, generate_grid_items, generate_grid_items_without, create_react_page_template_without, create_react_page_template, create_component_file_for_entity, create_form_template, create_form_for_entity, generate_components_for_role, create_view_component",
+            "Consider refactoring; this module has 32 functions."
+        ]
+    },
+    "nextapi": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: create_apis"
+        ]
+    },
+    "nextdb": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: create_db"
+        ]
+    },
+    "nextui": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: create_uis"
+        ]
+    },
+    "uploader": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 12,
+        "class_count": 1,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: main, __init__, create_directory, remove_directory, change_directory, upload_directory, delete_directory",
+            "Add docstrings to classes: FTPClient",
+            "Consider refactoring; this module has 12 functions."
+        ]
+    },
+    "setup": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": []
+    },
+    "authMiddleware": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: create_smtp_api"
+        ]
+    },
+    "auth_route_api": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: create_nextauth_configuration"
+        ]
+    },
+    "click_api": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: create_click_wrapper_component"
+        ]
+    },
+    "date_api": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 2,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: create_date_api_js_route"
+        ]
+    },
+    "date_utils_api": {
+        "unused_imports": [
+            "extract_table_details_from_migration",
+            "MIGRATIONS_DIR"
+        ],
+        "unused_variables": [],
+        "function_count": 2,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: extract_table_details_from_migration, MIGRATIONS_DIR"
+        ]
+    },
+    "geo_api": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: create_geolocation_component_js"
+        ]
+    },
+    "login_api": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: create_login_api"
+        ]
+    },
+    "middleware": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: create_smtp_api"
+        ]
+    },
+    "model_api": {
+        "unused_imports": [],
+        "unused_variables": [
+            "fields"
+        ],
+        "function_count": 3,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: generate_api_template"
+        ]
+    },
+    "model_wildcard_api": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 3,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: generate_api_template"
+        ]
+    },
+    "register_api": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: create_registration_api"
+        ]
+    },
+    "session_api": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: create_session_wrapper_component"
+        ]
+    },
+    "siteInfo_api": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: create_site_information_component"
+        ]
+    },
+    "smpt_api": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: create_smtp_api"
+        ]
+    },
+    "utils_api": {
+        "unused_imports": [],
+        "unused_variables": [
+            "fields"
+        ],
+        "function_count": 2,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": []
+    },
+    "ai_api": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 0,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": []
+    },
+    "downtiny": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 0,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": []
+    },
+    "redux_cart_api": {
+        "unused_imports": [
+            "json"
+        ],
+        "unused_variables": [],
+        "function_count": 0,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: json"
+        ]
+    },
+    "redux_delivery_api": {
+        "unused_imports": [
+            "json"
+        ],
+        "unused_variables": [],
+        "function_count": 0,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: json"
+        ]
+    },
+    "redux_geo_api": {
+        "unused_imports": [
+            "json"
+        ],
+        "unused_variables": [],
+        "function_count": 0,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: json"
+        ]
+    },
+    "redux_nft_api": {
+        "unused_imports": [
+            "json"
+        ],
+        "unused_variables": [],
+        "function_count": 0,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: json"
+        ]
+    },
+    "redux_past_api": {
+        "unused_imports": [
+            "json"
+        ],
+        "unused_variables": [],
+        "function_count": 0,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: json"
+        ]
+    },
+    "redux_siteInfo_api": {
+        "unused_imports": [
+            "json"
+        ],
+        "unused_variables": [],
+        "function_count": 0,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: json"
+        ]
+    },
+    "redux_state_api": {
+        "unused_imports": [
+            "json"
+        ],
+        "unused_variables": [],
+        "function_count": 0,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: json"
+        ]
+    },
+    "redux_ui_api": {
+        "unused_imports": [
+            "json"
+        ],
+        "unused_variables": [],
+        "function_count": 0,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: json"
+        ]
+    },
+    "data": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 4,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: update_user, main"
+        ]
+    },
+    "database_migration": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: execute_commands"
+        ]
+    },
+    "database_rollback": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: execute_commands"
+        ]
+    },
+    "database_seeding": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: execute_commands"
+        ]
+    },
+    "database_user_seeding": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: execute_commands"
+        ]
+    },
+    "model_index": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 3,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": []
+    },
+    "seeder_data_creator": {
+        "unused_imports": [
+            "re"
+        ],
+        "unused_variables": [],
+        "function_count": 3,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: re",
+            "Add docstrings to functions: main"
+        ]
+    },
+    "sequelize_model_creator": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 3,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: main"
+        ]
+    },
+    "sequelize_seeder": {
+        "unused_imports": [
+            "json",
+            "re"
+        ],
+        "unused_variables": [
+            "fields"
+        ],
+        "function_count": 3,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: json, re",
+            "Add docstrings to functions: main, get_next_prefix"
+        ]
+    },
+    "setupDB": {
+        "unused_imports": [
+            "logging"
+        ],
+        "unused_variables": [],
+        "function_count": 2,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: logging",
+            "Add docstrings to functions: create_database, update_database_values"
+        ]
+    },
+    "admin_content_page": {
+        "unused_imports": [],
+        "unused_variables": [
+            "ADMIN_UI_DIR"
+        ],
+        "function_count": 3,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": []
+    },
+    "admin_main_page": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: admin_main_page"
+        ]
+    },
+    "admin_component": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: create_admin_components"
+        ]
+    },
+    "admin_content_component": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: create_admin_content_components"
+        ]
+    },
+    "admin_interactive_component": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: create_admin_interactive_components"
+        ]
+    },
+    "admin_main_component": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: create_component_admin_page"
+        ]
+    },
+    "ai_ui_page": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: ai_page"
+        ]
+    },
+    "ai_ui_component": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 0,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": []
+    },
+    "login_page": {
+        "unused_imports": [
+            "json"
+        ],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: json"
+        ]
+    },
+    "register_page": {
+        "unused_imports": [
+            "json"
+        ],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: json"
+        ]
+    },
+    "reset_page": {
+        "unused_imports": [
+            "json"
+        ],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: json"
+        ]
+    },
+    "send_page": {
+        "unused_imports": [
+            "json"
+        ],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: json"
+        ]
+    },
+    "wait_page": {
+        "unused_imports": [
+            "json"
+        ],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: json"
+        ]
+    },
+    "authed_component": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": []
+    },
+    "deauth_component": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": []
+    },
+    "loginForm_component": {
+        "unused_imports": [
+            "json"
+        ],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: json",
+            "Add docstrings to functions: create_component_login_page"
+        ]
+    },
+    "registerForm_component": {
+        "unused_imports": [
+            "json"
+        ],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: json",
+            "Add docstrings to functions: create_component_register_page"
+        ]
+    },
+    "resetForm_component": {
+        "unused_imports": [
+            "json"
+        ],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: json",
+            "Add docstrings to functions: create_component_admin_page"
+        ]
+    },
+    "sendForm_component": {
+        "unused_imports": [
+            "json"
+        ],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: json",
+            "Add docstrings to functions: create_component_admin_page"
+        ]
+    },
+    "waitForm_component": {
+        "unused_imports": [
+            "json"
+        ],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: json",
+            "Add docstrings to functions: create_component_admin_page"
+        ]
+    },
+    "layout": {
+        "unused_imports": [
+            "json",
+            "create_page"
+        ],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: json, create_page",
+            "Add docstrings to functions: create_root_layout"
+        ]
+    },
+    "backButton": {
+        "unused_imports": [
+            "json"
+        ],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: json"
+        ]
+    },
+    "footer": {
+        "unused_imports": [
+            "json"
+        ],
+        "unused_variables": [],
+        "function_count": 0,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: json"
+        ]
+    },
+    "navbar": {
+        "unused_imports": [
+            "json"
+        ],
+        "unused_variables": [],
+        "function_count": 0,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: json"
+        ]
+    },
+    "navCart": {
+        "unused_imports": [
+            "json"
+        ],
+        "unused_variables": [],
+        "function_count": 0,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: json"
+        ]
+    },
+    "socialLinks": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 0,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": []
+    },
+    "music_component": {
+        "unused_imports": [],
+        "unused_variables": [
+            "model_name"
+        ],
+        "function_count": 2,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: create_view_component_2, create_components"
+        ]
+    },
+    "music_content_component": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: create_music_content_component"
+        ]
+    },
+    "music_interactive_component": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: create_interactive_comment_form"
+        ]
+    },
+    "music_player_component": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: create_music_viewer_component"
+        ]
+    },
+    "text_component": {
+        "unused_imports": [],
+        "unused_variables": [
+            "model_name"
+        ],
+        "function_count": 2,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: create_view_component_2, create_components"
+        ]
+    },
+    "text_content_component": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: create_text_content_component"
+        ]
+    },
+    "text_interactive_component": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: create_interactive_comment_form"
+        ]
+    },
+    "text_viewer_component": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: create_text_viewer_component"
+        ]
+    },
+    "video_component": {
+        "unused_imports": [],
+        "unused_variables": [
+            "model_name"
+        ],
+        "function_count": 2,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: create_view_component_2, create_components"
+        ]
+    },
+    "video_content_component": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: create_video_content_component"
+        ]
+    },
+    "video_interactive_component": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: create_interactive_comment_form"
+        ]
+    },
+    "video_player_component": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: create_video_viewer_component"
+        ]
+    },
+    "creator_content_page": {
+        "unused_imports": [],
+        "unused_variables": [
+            "CREATOR_UI_DIR"
+        ],
+        "function_count": 3,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": []
+    },
+    "creator_main_page": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: creator_main_page"
+        ]
+    },
+    "creator_component": {
+        "unused_imports": [
+            "ensure_folder_exists"
+        ],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: ensure_folder_exists",
+            "Add docstrings to functions: create_creator_components"
+        ]
+    },
+    "creator_content_component": {
+        "unused_imports": [
+            "ensure_folder_exists"
+        ],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: ensure_folder_exists",
+            "Add docstrings to functions: create_creator_content_components"
+        ]
+    },
+    "creator_interactive_component": {
+        "unused_imports": [
+            "ensure_folder_exists"
+        ],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: ensure_folder_exists",
+            "Add docstrings to functions: create_creator_interactive_components"
+        ]
+    },
+    "creator_main_component": {
+        "unused_imports": [
+            "ensure_folder_exists"
+        ],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: ensure_folder_exists",
+            "Add docstrings to functions: create_component_creator_page"
+        ]
+    },
+    "home_content_page": {
+        "unused_imports": [],
+        "unused_variables": [
+            "PUBLIC_UI_DIR"
+        ],
+        "function_count": 3,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": []
+    },
+    "home_main_page": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: public_main_page"
+        ]
+    },
+    "home_component": {
+        "unused_imports": [
+            "ensure_folder_exists"
+        ],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: ensure_folder_exists",
+            "Add docstrings to functions: create_public_components"
+        ]
+    },
+    "home_content_component": {
+        "unused_imports": [
+            "ensure_folder_exists"
+        ],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: ensure_folder_exists",
+            "Add docstrings to functions: create_public_content_components"
+        ]
+    },
+    "home_interactive_component": {
+        "unused_imports": [
+            "ensure_folder_exists"
+        ],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: ensure_folder_exists",
+            "Add docstrings to functions: create_public_interactive_components"
+        ]
+    },
+    "home_main_component": {
+        "unused_imports": [
+            "generate_main_component_content_with_state"
+        ],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: generate_main_component_content_with_state",
+            "Add docstrings to functions: create_component_public_page"
+        ]
+    },
+    "ftp_ui_page": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: ftp_page"
+        ]
+    },
+    "ftp_ui_component": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 0,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": []
+    },
+    "landing_ui_page copy": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 3,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: _page, landing_page, macho_page"
+        ]
+    },
+    "landing_ui_page": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 3,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: _page, landing_page, macho_page"
+        ]
+    },
+    "landing_ui_component copy": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 0,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": []
+    },
+    "landing_ui_component": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 0,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": []
+    },
+    "cart_page": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: creator_main_page"
+        ]
+    },
+    "checkout_page": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: creator_main_page"
+        ]
+    },
+    "order_page": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: creator_main_page"
+        ]
+    },
+    "productListWildcard_page": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: creator_main_page"
+        ]
+    },
+    "productList_page": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: creator_main_page"
+        ]
+    },
+    "cart_component": {
+        "unused_imports": [
+            "json"
+        ],
+        "unused_variables": [],
+        "function_count": 0,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: json"
+        ]
+    },
+    "checkout_component": {
+        "unused_imports": [
+            "json"
+        ],
+        "unused_variables": [],
+        "function_count": 0,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: json"
+        ]
+    },
+    "order_component": {
+        "unused_imports": [
+            "json"
+        ],
+        "unused_variables": [],
+        "function_count": 0,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: json"
+        ]
+    },
+    "productList_component": {
+        "unused_imports": [
+            "json"
+        ],
+        "unused_variables": [],
+        "function_count": 0,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: json"
+        ]
+    },
+    "productView_component": {
+        "unused_imports": [
+            "json"
+        ],
+        "unused_variables": [],
+        "function_count": 0,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: json"
+        ]
+    },
+    "user_content_page": {
+        "unused_imports": [],
+        "unused_variables": [
+            "CREATOR_UI_DIR"
+        ],
+        "function_count": 3,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": []
+    },
+    "user_main_page": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: user_main_page"
+        ]
+    },
+    "user_component": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: create_user_components"
+        ]
+    },
+    "user_content_component": {
+        "unused_imports": [
+            "ensure_folder_exists"
+        ],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: ensure_folder_exists",
+            "Add docstrings to functions: create_user_content_components"
+        ]
+    },
+    "user_interactive_component": {
+        "unused_imports": [
+            "ensure_folder_exists"
+        ],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: ensure_folder_exists",
+            "Add docstrings to functions: create_user_interactive_components"
+        ]
+    },
+    "user_main_component": {
+        "unused_imports": [
+            "ensure_folder_exists"
+        ],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: ensure_folder_exists",
+            "Add docstrings to functions: create_component_user_page"
+        ]
+    },
+    "gui_application": {
+        "unused_imports": [
+            "tkinter"
+        ],
+        "unused_variables": [],
+        "function_count": 6,
+        "class_count": 1,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: tkinter",
+            "Add docstrings to functions: __init__, _tk_thread, on_close"
+        ]
+    },
+    "extract": {
+        "unused_imports": [
+            "Any",
+            "Dict"
+        ],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: Any, Dict"
+        ]
+    },
+    "llm_client": {
+        "unused_imports": [
+            "json",
+            "Fore",
+            "colored_print",
+            "strip_model_escapes",
+            "Style",
+            "execute_tool"
+        ],
+        "unused_variables": [
+            "execute",
+            "timestamp_md",
+            "tool_use"
+        ],
+        "function_count": 2,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: json, Fore, colored_print, strip_model_escapes, Style, execute_tool",
+            "Add docstrings to functions: inferencing, see"
+        ]
+    },
+    "llm_service": {
+        "unused_imports": [
+            "Style",
+            "Any"
+        ],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 1,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: Style, Any",
+            "Add docstrings to classes: LLMService"
+        ]
+    },
+    "prompts": {
+        "unused_imports": [],
+        "unused_variables": [
+            "model",
+            "section"
+        ],
+        "function_count": 7,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: load_message_template, extract_ordered_list_with_details, add_context_to_messages"
+        ]
+    },
+    "workflows": {
+        "unused_imports": [
+            "ai_code_path",
+            "error_file",
+            "assistant_prefix",
+            "summary_prefix",
+            "ai_results_path",
+            "ai_history_path",
+            "code_prefix",
+            "ai_summaries_path",
+            "gen_ai_path",
+            "ai_errors_path",
+            "Dict",
+            "MODELS_PATH",
+            "anonymised",
+            "model_map",
+            "binary_answer",
+            "triple_backticks"
+        ],
+        "unused_variables": [],
+        "function_count": 0,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Remove unused imports: ai_code_path, error_file, assistant_prefix, summary_prefix, ai_results_path, ai_history_path, code_prefix, ai_summaries_path, gen_ai_path, ai_errors_path, Dict, MODELS_PATH, anonymised, model_map, binary_answer, triple_backticks"
+        ]
+    },
+    "project": {
+        "unused_imports": [],
+        "unused_variables": [
+            "base_steps",
+            "base_process",
+            "base_tasks"
+        ],
+        "function_count": 3,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: doLive"
+        ]
+    },
+    "config": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: ensure_build_directories"
+        ]
+    },
+    "constants": {
+        "unused_imports": [],
+        "unused_variables": [
+            "md_heading",
+            "ai_code_path",
+            "error_file",
+            "assistant_prefix",
+            "summary_prefix",
+            "ai_results_path",
+            "ai_history_path",
+            "code_prefix",
+            "gen_ai_path",
+            "ai_summaries_path",
+            "ai_errors_path",
+            "tips",
+            "MODELS_PATH",
+            "anonymised",
+            "model_map",
+            "binary_answer",
+            "triple_backticks"
+        ],
+        "function_count": 0,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": []
+    },
+    "session_management": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 7,
+        "class_count": 1,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: __init__",
+            "Add docstrings to classes: SessionManager"
+        ]
+    },
+    "state": {
+        "unused_imports": [],
+        "unused_variables": [
+            "retries",
+            "name",
+            "completed",
+            "improvements",
+            "params",
+            "action",
+            "steps",
+            "result",
+            "max_retries",
+            "status",
+            "current_step_index"
+        ],
+        "function_count": 0,
+        "class_count": 2,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to classes: Step, SelfImprovementState"
+        ]
+    },
+    "base_execute": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 2,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": []
+    },
+    "coder": {
+        "unused_imports": [],
+        "unused_variables": [
+            "_"
+        ],
+        "function_count": 2,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": [
+            "Add docstrings to functions: improve_adherence_to_python_standards"
+        ]
+    },
+    "improver": {
+        "unused_imports": [],
+        "unused_variables": [
+            "state"
+        ],
+        "function_count": 0,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": []
+    },
+    "run_commands": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 3,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": []
+    },
+    "text_crud": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 6,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": []
+    },
+    "text_utils": {
+        "unused_imports": [],
+        "unused_variables": [],
+        "function_count": 1,
+        "class_count": 0,
+        "unreachable_code": [],
+        "improvements": []
+    }
+}

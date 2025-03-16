@@ -312,8 +312,8 @@ class UserRequests:
 
         write_content_to_file(prompt, './prompts/gen/simple_prompt.md')
 
-        # code_messages = self.messages_context + load_message_template(
-        #     sys_type='python', summary=self.summary)
-        # code_messages.append({'role': 'user', 'content': prompt})
+        code_messages = self.messages_context + load_message_template(
+            sys_type='python', summary=self.summary)
+        code_messages.append({'role': 'user', 'content': prompt})
 
-        # response = await self.send_and_store_message(code_messages)
+        response = await self.send_and_store_message(code_messages)

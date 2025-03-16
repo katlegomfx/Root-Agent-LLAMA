@@ -6,8 +6,9 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 
+thesysname = "You are Flexi💻AI."
 DEFAULT_PROMPT_FILE = "flexi.txt"
-DEFAULT_PROMPT_CONTENT = "You are Flexi💻AI. You think step by step, keeping key points in mind to solve or answer the request."
+DEFAULT_PROMPT_CONTENT = f"{thesysname}. You think step by step, keeping key points in mind to solve or answer the request."
 MD_HEADING = "#"
 TRIPLE_BACKTICKS = "```"
 
@@ -66,7 +67,7 @@ def load_message_template(sys_type: str = 'base', summary: str = '') -> List[Dic
     sys_type = sys_type.lower()
     if sys_type == "base":
         content = f"""
-{MD_HEADING} You are Flexi, an advanced AI agent capable of reflection and tool usage.
+{MD_HEADING} {thesysname}, an advanced AI agent capable of reflection and tool usage.
 {MD_HEADING} You must handle user requests by reasoning step by step:
 {MD_HEADING} 1) Understand the user request.
 {MD_HEADING} 2) Choose if you will use a tool or python.
@@ -93,9 +94,13 @@ def load_message_template(sys_type: str = 'base', summary: str = '') -> List[Dic
 [{", ".join([(tool_registry[tool].__doc__ or "").strip() for tool in tool_registry.keys()])}]
 """
         message = [{'role': 'system', 'content': content.strip()}]
+    elif sys_type == "answer":
+        content = f"""{MD_HEADING} {thesysname}, an advanced AI agent, answer as best you can."""
+        message = [{'role': 'system', 'content': content.strip()}]
+
     elif sys_type == "check":
         content = f"""
-{MD_HEADING} You are Flexi, an advanced AI agent capable of reflection and tool usage.
+{MD_HEADING} {thesysname}, an advanced AI agent capable of reflection and tool usage.
 {MD_HEADING} You must handle user requests by reasoning step by step:
 {MD_HEADING} 1) Understand the user request.
 {MD_HEADING} 2) Decide if the user's request was achieved.
@@ -106,17 +111,8 @@ def load_message_template(sys_type: str = 'base', summary: str = '') -> List[Dic
     {TRIPLE_BACKTICKS}
 """
         message = [{'role': 'system', 'content': content.strip()}]
-    elif sys_type == "general":
-        content = f"""
-{MD_HEADING} You are Flexi, an advanced AI agent capable of reflection and tool usage.
-{MD_HEADING} Your task is to understand the user request and provide a final result or explanation.
-{MD_HEADING} Maintain context and self-critique as needed.
-"""
-        message = [{'role': 'system', 'content': content.strip()}]
-    elif sys_type == "bot":
-        message = [{'role': 'system', 'content': f"{MD_HEADING} You are a super helpful assistant that helps users complete their requests using AI."}]
     elif sys_type == "tool":
-        content = f"""{MD_HEADING} You are Flexi, an advanced AI agent with tool usage capabilities.
+        content = f"""{MD_HEADING} {thesysname}, an advanced AI agent with tool usage capabilities.
 {MD_HEADING} Steps:
 1) Understand the user request.
 2) If a tool is required, output a JSON instruction wrapped in triple backticks.
@@ -134,11 +130,14 @@ Example:
     {TRIPLE_BACKTICKS}
 """
         message = [{'role': 'system', 'content': content.strip()}]
-    elif sys_type in ["work", "projectsteps", "projecttasks", "projectprocess"]:
-        message = [
-            {'role': 'system', 'content': f"{MD_HEADING} You are a super helpful assistant."}]
     elif sys_type == "summary":
         message = [{'role': 'system', 'content': f"{MD_HEADING} You are a personal assistant. Extract and summarize key points from the provided text."}]
+    elif sys_type not in ["tool", ]:
+        message = [
+            {'role': 'system',
+                'content': f'{MD_HEADING} You are an expert {sys_type.capitalize()} Developer'}
+        ]
+
     else:
         message = [
             {'role': 'system', 'content': f"{MD_HEADING} You are an expert {sys_type.capitalize()} Developer."}]

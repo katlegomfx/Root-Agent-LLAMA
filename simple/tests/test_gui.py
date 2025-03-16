@@ -1,7 +1,7 @@
 import unittest
 import tkinter as tk
 
-from simple.code.gui import FlexiAIApp
+from simple.code.agent_gui import FlexiAIApp
 
 {MD_HEADING} Dummy manager classes to isolate the GUI tests from file I/O.
 

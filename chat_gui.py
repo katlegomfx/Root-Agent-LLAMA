@@ -1,5 +1,3 @@
-from simple.code import utils, memory
-from simple.code.system_prompts import MD_HEADING  # ensure MD_HEADING is imported
 import tkinter as tk
 from tkinter import filedialog
 import threading
@@ -15,12 +13,27 @@ import subprocess
 import logging
 from typing import List
 
-from simple.code import utils
+from simple.code import utils, memory
 from simple.code.inference import run_inference, current_client
 from simple.code.history import HistoryManager
 from simple.code.system_prompts import MD_HEADING, load_message_template
 
 logging.basicConfig(level=logging.INFO)
+
+
+# Helper class to update two text widgets simultaneously.
+class DualTextWidget:
+    def __init__(self, widget1, widget2):
+        self.widget1 = widget1
+        self.widget2 = widget2
+
+    def insert(self, index, text):
+        self.widget1.insert(index, text)
+        self.widget2.insert(index, text)
+
+    def see(self, index):
+        self.widget1.see(index)
+        self.widget2.see(index)
 
 
 def apply_theme_recursive(widget, bg_color, fg_color):
@@ -69,6 +82,9 @@ class FlexiAIApp:
         self.collapsible_sections = []
         self.all_sections_expanded = True
 
+        # Add a variable for the agent goal (to be specified by the user)
+        self.agent_goal = ""
+
         self.text_prompt = [{
             'role': 'system',
             'content': "You are Flexi💻AI. You think step by step, keeping key points in mind to solve or answer the request."
@@ -79,12 +95,12 @@ class FlexiAIApp:
         self.assistant_response_history_index = None
         self.current_history_file = ""
 
-        self.history_manager = HistoryManager()  
+        self.history_manager = HistoryManager()
         self.model_map = {'llama3.2': ()}
         self.setup_ui()
-        self.auto_save_interval_ms = 5 * 60 * 1000  
+        self.auto_save_interval_ms = 5 * 60 * 1000
         self.schedule_auto_save()
-        self.load_first_history()  
+        self.load_first_history()
 
     def set_app_icon(self) -> None:
         try:
@@ -119,7 +135,6 @@ class FlexiAIApp:
                 self.update_assistant_response_history()
                 logging.info(f"Loaded history from {first_history}")
 
-
     def search_history(self) -> None:
         """Opens a dialog to search conversation history and display matching entries."""
         def do_search():
@@ -138,15 +153,14 @@ class FlexiAIApp:
 
         search_window = tk.Toplevel(self.root)
         search_window.title("Search Conversation History")
-        tk.Label(search_window, text="Enter search query:").pack(padx=5, pady=5)
+        tk.Label(search_window, text="Enter search query:").pack(
+            padx=5, pady=5)
         search_entry = tk.Entry(search_window, width=50)
         search_entry.pack(padx=5, pady=5)
         tk.Button(search_window, text="Search",
-                command=do_search).pack(padx=5, pady=5)
+                  command=do_search).pack(padx=5, pady=5)
         results = tk.Listbox(search_window, width=100, height=10)
         results.pack(padx=5, pady=5, fill="both", expand=True)
-
-
 
     def setup_ui(self) -> None:
         top_bar = tk.Frame(self.root)
@@ -156,6 +170,18 @@ class FlexiAIApp:
         tk.Button(top_bar, text="Toggle All",
                   command=self.toggle_all_sections).pack(side="left", padx=5)
 
+        # # =======================
+        # # New Agent Goal Section
+        # agent_goal_section = CollapsibleSection(self.root, title="Agent Goal")
+        # self.collapsible_sections.append(agent_goal_section)
+        # agent_goal_frame = agent_goal_section.content_frame
+        # tk.Label(agent_goal_frame, text="Specify Agent Goal:").grid(
+        #     row=0, column=0, sticky="w", padx=5, pady=5)
+        # self.agent_goal_entry = tk.Text(agent_goal_frame, height=3)
+        # self.agent_goal_entry.grid(
+        #     row=1, column=0, sticky="ew", padx=5, pady=5)
+        # agent_goal_frame.grid_columnconfigure(0, weight=1)
+        # # =======================
         model_section = CollapsibleSection(self.root, title="Model Selection")
         self.collapsible_sections.append(model_section)
         model_section.pack(fill="x", padx=5, pady=5)
@@ -168,18 +194,20 @@ class FlexiAIApp:
         tk.OptionMenu(model_frame, self.model_var, *
                       model_options).grid(row=0, column=1, padx=5, pady=5)
 
-        system_section = CollapsibleSection(self.root, title="System Prompt")
-        self.collapsible_sections.append(system_section)
-        system_section.pack(fill="x", padx=5, pady=5)
-        system_frame = system_section.content_frame
-        tk.Label(system_frame, text="System Prompt:").grid(
+        mode_section = CollapsibleSection(self.root, title="Execution Mode")
+        self.collapsible_sections.append(mode_section)
+        mode_section.pack(fill="x", padx=5, pady=5)
+        mode_frame = mode_section.content_frame
+        tk.Label(mode_frame, text="Select Mode:").grid(
             row=0, column=0, sticky="w")
-        self.system_text_area = tk.Text(system_frame, height=3)
-        self.system_text_area.grid(row=1, column=0, sticky="ew", padx=(0, 5))
-        self.system_text_area.insert("1.0", self.text_prompt[0]["content"])
-        tk.Button(system_frame, text="Update System Prompt",
-                  command=self.update_system_prompt).grid(row=1, column=1, sticky="e")
-        system_frame.grid_columnconfigure(0, weight=1)
+        self.mode_var = tk.StringVar(mode_frame, value="base")
+        mode_options = ["auto", "tool", "code", "base"]
+        tk.OptionMenu(mode_frame, self.mode_var, *
+                      mode_options).grid(row=0, column=1, padx=5, pady=5)
+        mode_frame.grid_columnconfigure(1, weight=1)
+
+
+
 
         sp_mgmt_section = CollapsibleSection(
             self.root, title="System Prompt Management")
@@ -207,6 +235,19 @@ class FlexiAIApp:
         sp_mgmt_frame.grid_columnconfigure(1, weight=1)
         self.update_system_prompts_dropdown()
 
+        system_section = CollapsibleSection(self.root, title="System Prompt")
+        self.collapsible_sections.append(system_section)
+        system_section.pack(fill="x", padx=5, pady=5)
+        system_frame = system_section.content_frame
+        tk.Label(system_frame, text="System Prompt:").grid(
+            row=0, column=0, sticky="w")
+        self.system_text_area = tk.Text(system_frame, height=3)
+        self.system_text_area.grid(row=1, column=0, sticky="ew", padx=(0, 5))
+        self.system_text_area.insert("1.0", self.text_prompt[0]["content"])
+        tk.Button(system_frame, text="Update System Prompt",
+                  command=self.update_system_prompt).grid(row=1, column=1, sticky="e")
+        system_frame.grid_columnconfigure(0, weight=1)
+
         template_section = CollapsibleSection(
             self.root, title="Message Template")
         self.collapsible_sections.append(template_section)
@@ -228,17 +269,7 @@ class FlexiAIApp:
             row=0, column=2, padx=5, pady=5)
         template_frame.grid_columnconfigure(1, weight=1)
 
-        mode_section = CollapsibleSection(self.root, title="Execution Mode")
-        self.collapsible_sections.append(mode_section)
-        mode_section.pack(fill="x", padx=5, pady=5)
-        mode_frame = mode_section.content_frame
-        tk.Label(mode_frame, text="Select Mode:").grid(
-            row=0, column=0, sticky="w")
-        self.mode_var = tk.StringVar(mode_frame, value="base")
-        mode_options = ["auto", "tool", "code", "base"]
-        tk.OptionMenu(mode_frame, self.mode_var, *
-                      mode_options).grid(row=0, column=1, padx=5, pady=5)
-        mode_frame.grid_columnconfigure(1, weight=1)
+
 
         history_section = CollapsibleSection(self.root, title="History")
         self.collapsible_sections.append(history_section)
@@ -274,21 +305,6 @@ class FlexiAIApp:
             row=0, column=5, padx=5, pady=5)
 
 
-        code_append_section = CollapsibleSection(
-            self.root, title="Code Append")
-        self.collapsible_sections.append(code_append_section)
-        code_append_section.pack(fill="x", padx=5, pady=5)
-        code_append_frame = code_append_section.content_frame
-        tk.Label(code_append_frame, text="Codebase Directory:").grid(
-            row=0, column=0, sticky="w")
-        self.codebase_path_entry = tk.Entry(code_append_frame)
-        self.codebase_path_entry.grid(
-            row=0, column=1, padx=5, pady=5, sticky="ew")
-        tk.Label(code_append_frame, text="Additional Tips:").grid(
-            row=1, column=0, sticky="w")
-        self.tips_entry = tk.Text(code_append_frame, height=3)
-        self.tips_entry.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
-        code_append_frame.grid_columnconfigure(1, weight=1)
 
         input_section = CollapsibleSection(self.root, title="Input")
         self.collapsible_sections.append(input_section)
@@ -310,6 +326,34 @@ class FlexiAIApp:
         tk.Button(control_frame, text="Clear Conversation",
                   command=self.clear_conversation).pack(fill="x", pady=5)
         input_frame.grid_columnconfigure(0, weight=1)
+
+        code_append_section = CollapsibleSection(
+            self.root, title="Code Append")
+        self.collapsible_sections.append(code_append_section)
+        code_append_section.pack(fill="x", padx=5, pady=5)
+        code_append_frame = code_append_section.content_frame
+        tk.Label(code_append_frame, text="Codebase Directory:").grid(
+            row=0, column=0, sticky="w")
+        self.codebase_path_entry = tk.Entry(code_append_frame)
+        self.codebase_path_entry.grid(
+            row=0, column=1, padx=5, pady=5, sticky="ew")
+        tk.Label(code_append_frame, text="Additional Tips:").grid(
+            row=1, column=0, sticky="w")
+        self.tips_entry = tk.Text(code_append_frame, height=3)
+        self.tips_entry.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
+        code_append_frame.grid_columnconfigure(1, weight=1)
+
+        # =======================
+        # New Scratchpad Section for incremental LLM output
+        scratchpad_section = CollapsibleSection(self.root, title="Scratchpad")
+        self.collapsible_sections.append(scratchpad_section)
+        scratchpad_frame = scratchpad_section.content_frame
+        tk.Label(scratchpad_frame, text="LLM Scratchpad (Intermediate Output):").pack(
+            anchor="w", padx=5, pady=5)
+        self.scratchpad_text_area = tk.Text(scratchpad_frame, height=10)
+        self.scratchpad_text_area.pack(
+            fill="both", expand=True, padx=5, pady=5)
+        # =======================
 
         output_section = CollapsibleSection(self.root, title="Output")
         self.collapsible_sections.append(output_section)
@@ -395,7 +439,6 @@ class FlexiAIApp:
             msg["content"] for msg in self.text_prompt if msg.get("role") == "assistant"]
         self.assistant_response_history_index = None
 
-
     def get_memory_context(self, user_request: str) -> str:
         """
         Retrieves a formatted memory context block based on the current user request.
@@ -415,13 +458,13 @@ class FlexiAIApp:
             logging.error(f"Error retrieving memory: {e}")
         return memory_context
 
-
     def build_full_prompt(self, user_request: str) -> str:
         """
         Builds the full prompt to be sent for inference. This version enhances the prompt by:
         - Including codebase context (if a codebase path is provided)
         - Retrieving relevant memory (using functions from memory.py)
         - Appending any additional tips provided by the user
+        - Incorporating the user-specified agent goal (if provided)
         """
         codebase_path = self.codebase_path_entry.get().strip()
         base_code = ""
@@ -444,8 +487,11 @@ class FlexiAIApp:
         else:
             full_prompt = f"{memory_context}{MD_HEADING} {user_request}"
 
+        # Prepend the agent goal if one has been specified
+        agent_goal = self.agent_goal_entry.get("1.0", "end-1c").strip()
+        if agent_goal:
+            full_prompt = f"Goal: {agent_goal}\n\n{full_prompt}"
         return full_prompt
-
 
     @staticmethod
     def extract_code_blocks(text: str, language: str) -> list:
@@ -565,12 +611,17 @@ class FlexiAIApp:
         self.submit_button.config(state=tk.DISABLED)
         self.text_prompt.append({'role': 'user', 'content': full_prompt})
         self.update_user_input_history()
+        # Clear both output and scratchpad areas
         self.output_text_area.delete("1.0", tk.END)
+        self.scratchpad_text_area.delete("1.0", tk.END)
 
         def run_mode_inference():
             mode = self.mode_var.get().lower()
             response = ""
             try:
+                # Create a dual widget that sends updates to both final output and scratchpad.
+                dual_widget = DualTextWidget(
+                    self.output_text_area, self.scratchpad_text_area)
                 if mode == "tool":
                     result_tuple = asyncio.run(self.tool_use(self.text_prompt))
                     response = "".join(result_tuple[0]) if isinstance(
@@ -584,12 +635,13 @@ class FlexiAIApp:
                     self.text_prompt.append(
                         {'role': 'assistant', 'content': response})
                 elif mode == "auto":
-                    response = asyncio.run(self.decide_execution(self.text_prompt))
+                    response = asyncio.run(
+                        self.decide_execution(self.text_prompt))
                     self.text_prompt.append(
                         {'role': 'assistant', 'content': response})
                 else:
                     response = run_inference(
-                        self.text_prompt, self.output_text_area, self.root, self.model_var.get())
+                        self.text_prompt, dual_widget, self.root, self.model_var.get())
                     self.text_prompt.append(
                         {'role': 'assistant', 'content': response})
                 self.update_assistant_response_history()
@@ -609,7 +661,6 @@ class FlexiAIApp:
                 self.history_manager.save_history(self.text_prompt)
 
         threading.Thread(target=run_mode_inference).start()
-
 
     def update_system_prompt(self) -> None:
         new_prompt = self.system_text_area.get("1.0", "end-1c")
@@ -671,6 +722,7 @@ class FlexiAIApp:
         self.assistant_response_history = []
         self.input_text_area.delete("1.0", tk.END)
         self.output_text_area.delete("1.0", tk.END)
+        self.scratchpad_text_area.delete("1.0", tk.END)
         self.history_manager.save_history(self.text_prompt)
         logging.info("Conversation cleared.")
 
@@ -882,8 +934,10 @@ class FlexiAIApp:
             with open(history_path, "w", encoding="utf-8") as f:
                 json.dump(self.text_prompt, f, indent=4)
             logging.info(f"History saved to {history_path}")
+            return history_path
         except Exception as e:
             logging.error(f"Error saving history: {e}")
+            return None
         self.update_history_dropdown()
 
     def auto_save_history(self) -> None:
@@ -992,37 +1046,6 @@ def execute_python_code(code: str) -> dict:
     return result
 
 
-def execute_tool(instruction: dict) -> dict:
-    """
-    Execute a named tool with the provided parameters.
-    """
-    result = {"status": "", "message": ""}
-    tool_name = instruction.get('tool')
-    if not tool_name:
-        logging.error("No tool specified in the instruction.")
-        result['status'] = "500"
-        result['message'] = "Error: No tool specified."
-        return result
-    from simple.code.system_prompts import tool_registry
-    tool_func = tool_registry.get(tool_name)
-    if not tool_func:
-        logging.error(f"Tool {tool_name} not found in registry.")
-        result['status'] = "500"
-        result['message'] = f"Error: Tool {tool_name} not found."
-        return result
-    params = instruction.get('parameters')
-    try:
-        logging.info(f"Executing tool: {tool_name} with parameters: {params}")
-        output = tool_func(params)
-        if output is None:
-            raise Exception("Tool returned None (possibly an error).")
-        result['status'] = "200"
-        result['message'] = f"Execution successful\nResult:\n{output}"
-    except Exception as e:
-        logging.error(f"Error executing tool {tool_name}: {e}")
-        result['status'] = "500"
-        result['message'] = f"Execution failed:\n{str(e)}"
-    return result
 
 
 def main() -> None:
