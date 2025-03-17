@@ -3,8 +3,10 @@ from datetime import datetime
 import subprocess
 from typing import Any, List, Dict
 import logging
+from simple.code.logging_config import setup_logging
 
-logging.basicConfig(level=logging.INFO)
+# Set up logging once from the centralized module
+setup_logging()
 
 thesysname = "You are Flexi💻AI."
 DEFAULT_PROMPT_FILE = "flexi.txt"
@@ -95,9 +97,8 @@ def load_message_template(sys_type: str = 'base', summary: str = '') -> List[Dic
 """
         message = [{'role': 'system', 'content': content.strip()}]
     elif sys_type == "answer":
-        content = f"""{MD_HEADING} {thesysname}, an advanced AI agent, answer as best you can."""
+        content = f"""{MD_HEADING} {thesysname}, an advanced AI agent, answer as best you can using only the information provided."""
         message = [{'role': 'system', 'content': content.strip()}]
-
     elif sys_type == "check":
         content = f"""
 {MD_HEADING} {thesysname}, an advanced AI agent capable of reflection and tool usage.
@@ -137,7 +138,6 @@ Example:
             {'role': 'system',
                 'content': f'{MD_HEADING} You are an expert {sys_type.capitalize()} Developer'}
         ]
-
     else:
         message = [
             {'role': 'system', 'content': f"{MD_HEADING} You are an expert {sys_type.capitalize()} Developer."}]

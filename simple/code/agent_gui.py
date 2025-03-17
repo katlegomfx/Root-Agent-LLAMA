@@ -23,21 +23,18 @@ import logging
 import traceback
 
 from simple.code import utils, memory
-
-from simple.code.utils import colored_print, strip_model_escapes
+from simple.code.utils import colored_print, Fore, extract_json_block
 from simple.code.inference import run_inference, current_client
 from simple.code.history import HistoryManager
 from simple.code.function_call import execute_python_code, execute_tool
 from simple.code.system_prompts import MD_HEADING, tool_registry, load_message_template
-from colorama import Fore, Style
+from simple.code.logging_config import setup_logging
 
-logging.basicConfig(
-    filename='agent_gui.log',
-    level=logging.DEBUG,
-    format='%(asctime)s %(levelname)s %(message)s'
-)
+# Set up logging once from the centralized module
+setup_logging()
 
 triple_backticks = '`' * 3
+
 
 class FlexiAgentApp:
     def __init__(self, root: tk.Tk) -> None:
@@ -58,6 +55,19 @@ class FlexiAgentApp:
         tk.Label(model_frame, text="Model:").pack(side=tk.LEFT)
         self.model_entry = tk.Entry(model_frame, textvariable=self.model_var)
         self.model_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        directory_frame = tk.Frame(main_frame)
+        directory_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 5))
+        tk.Label(directory_frame, text="Agent Work Directory:").grid(
+            row=0, column=0, sticky="w")
+        self.codebase_path_entry = tk.Entry(directory_frame)
+        self.codebase_path_entry.grid(
+            row=0, column=1, padx=5, pady=5, sticky="ew")
+        tk.Label(directory_frame, text="Additional Tips:").grid(
+            row=1, column=0, sticky="w")
+        tk.Label(directory_frame, text="Choose a directory:").pack(anchor="w")
+        self.tips_entry = tk.Text(directory_frame, height=3)
+        self.tips_entry.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
 
         # Input text area
         input_frame = tk.Frame(main_frame)
@@ -129,21 +139,19 @@ class FlexiAgentApp:
         """
         Updates the UI with the final response and re-enables the submit button.
         """
-        # If self.text_prompt is a dictionary, convert it to a list.
         if isinstance(self.text_prompt, dict):
             self.text_prompt = [self.text_prompt]
         self.text_prompt.append({'role': 'assistant', 'content': response})
-        self.output_text_area.insert(tk.END, response)
+        self.output_text_area.insert(tk.END, '\n' + response)
         self.submit_button.config(state=tk.NORMAL)
 
     @staticmethod
     def extract_code_blocks(text: str, language: str) -> list:
-        # Modified regex to allow for a newline (or more) between the triple backticks and the language
+        # Modified regex to allow for a newline between the triple backticks and the language
         pattern = rf"```(?:\n\s*)*{re.escape(language)}\s*\n(.*?)```"
         return re.findall(pattern, text, re.DOTALL)
 
     async def decide_execution(self, messages: dict) -> str:
-        # Build the base prompt using a system template and then append the user's message.
         base_prompt = load_message_template('base', '')
         base_prompt.append(messages)
         return await self.agent_execution(base_prompt)
@@ -217,76 +225,72 @@ class FlexiAgentApp:
             return final_response, code_script, status_message, base_prompt
 
     async def agent_execution(self, base_prompt: List[dict]):
-        colored_print("Agent AI", Fore.GREEN)
+        colored_print("Agent AI", Fore.BLUE)
         logging.debug("Base prompt for agent execution: %s", base_prompt)
         base_response = run_inference(
             base_prompt, self.agent_scratchpad_text_area, self.root, self.model_var.get())
 
-        use_script = self.extract_code_blocks(base_response, 'json')
-        if not use_script:
+        try:
+            json_instruct = extract_json_block(base_response)
+        except ValueError:
             correction_prompt = base_prompt.copy()
             correction_prompt.append(
                 {'role': 'assistant', 'content': base_response})
             correction_prompt.append(
-                {'role': 'user', 'content': "Remember to wrap the instruction in triple backticks and specify 'json'. (start response with ```json)"})
+                {'role': 'user', 'content': "Remember to wrap the instruction in triple backticks and specify 'json' (starting with ```json)."})
             return await self.agent_execution(correction_prompt)
 
         responses = []
-        for code_snippet in use_script:
-            try:
-                json_instruct = json.loads(code_snippet)
-            except json.JSONDecodeError:
-                continue
+        if isinstance(json_instruct, list):
+            json_instruct = json_instruct[0]
+        elif isinstance(json_instruct, str):
+            correction_prompt = base_prompt.copy()
+            correction_prompt.append(
+                {'role': 'assistant', 'content': json.dumps(base_response)})
+            correction_prompt.append(
+                {'role': 'user', 'content': "Remember to wrap the instruction in triple backticks and specify 'json' with an object containing the key 'use' and a 'value' either python or tool."})
+            return await self.agent_execution(correction_prompt)
 
-            if isinstance(json_instruct, list):
-                json_instruct = json_instruct[0]
-            elif isinstance(json_instruct, str):
-                correction_prompt = base_prompt.copy()
-                correction_prompt.append(
-                    {'role': 'assistant', 'content': json.dumps(base_response)})
-                correction_prompt.append(
-                    {'role': 'user', 'content': "Remember to wrap the instruction in triple backticks and specify 'json' with an object containing the key 'use' and a 'value' either python or tool."})
-                return await self.agent_execution(correction_prompt)
+        if 'use' in json_instruct and json_instruct['use'].lower() in ['python', 'tool']:
+            base_prompt.append(
+                {'role': 'assistant', 'content': json.dumps(base_response)})
+            ai_choice = json_instruct["use"].lower()
 
-            if 'use' in json_instruct and json_instruct['use'].lower() in ['python', 'tool']:
-                base_prompt.append(
-                    {'role': 'assistant', 'content': json.dumps(base_response)})
-                ai_choice = json_instruct["use"].lower()
+            if ai_choice == "python":
+                colored_print("Starting Python Code Use", Fore.BLUE)
+                py_base_prompt = self.messages_context + \
+                    load_message_template('python')
+                py_base_prompt.append(self.text_prompt)
+                final_response, code_script, status_message, py_base_prompt = await self.code_use(py_base_prompt)
+                responses.append({
+                    'response': final_response,
+                    'code': code_script,
+                    'status': status_message,
+                    'request': py_base_prompt
+                })
 
-                if ai_choice == "python":
-                    colored_print("Starting Python Code Use", Fore.GREEN)
-                    py_base_prompt = self.messages_context + \
-                        load_message_template('python')
-                    py_base_prompt.append(self.text_prompt)
-                    final_response, code_script, status_message, py_base_prompt = await self.code_use(py_base_prompt)
-                    responses.append({
-                        'response': final_response,
-                        'code': code_script,
-                        'status': status_message,
-                        'request': py_base_prompt
-                    })
+            elif ai_choice == "tool":
+                colored_print("Starting Tool Use", Fore.BLUE)
+                tool_base_prompt = self.messages_context + \
+                    load_message_template('tool')
+                tool_base_prompt.append(self.text_prompt)
+                base_response, code_script, status_message, tool_base_prompt = await self.tool_use(tool_base_prompt)
+                responses.append({
+                    'response': base_response,
+                    'instruction': code_script,
+                    'status': status_message,
+                    'request': tool_base_prompt
+                })
+        else:
+            correction_prompt = base_prompt.copy()
+            correction_prompt.append(
+                {'role': 'assistant', 'content': json.dumps(base_response)})
+            correction_prompt.append(
+                {'role': 'user', 'content': "Please produce a JSON object with 'use' key and python or tool as 'value'."})
+            return await self.agent_execution(correction_prompt)
 
-                elif ai_choice == "tool":
-                    colored_print("Starting Tool Use", Fore.GREEN)
-                    tool_base_prompt = self.messages_context + \
-                        load_message_template('tool')
-                    tool_base_prompt.append(self.text_prompt)
-                    base_response, code_script, status_message, tool_base_prompt = await self.tool_use(tool_base_prompt)
-                    responses.append({
-                        'response': base_response,
-                        'instruction': code_script,
-                        'status': status_message,
-                        'request': tool_base_prompt
-                    })
-            else:
-                correction_prompt = base_prompt.copy()
-                correction_prompt.append(
-                    {'role': 'assistant', 'content': json.dumps(base_response)})
-                correction_prompt.append(
-                    {'role': 'user', 'content': "Please produce a JSON object with 'use' key and python or tool as 'value'."})
-                return await self.agent_execution(correction_prompt)
-
-        if len(responses) >= 1:
+        if responses:
+            colored_print("Checking Results", Fore.BLUE)
             check_prompt = self.messages_context + \
                 load_message_template('check', self.summary)
             check_prompt.append(
@@ -294,63 +298,78 @@ class FlexiAgentApp:
             check_response = run_inference(
                 check_prompt, self.agent_scratchpad_text_area, self.root, self.model_var.get())
 
-            use_script = self.extract_code_blocks(check_response, 'json')
-            if not use_script:
-                correction_prompt = check_prompt.copy()
+            try:
+                # Use check_response instead of base_response here
+                json_instruct = extract_json_block(check_response)
+            except ValueError:
+                correction_prompt = base_prompt.copy()
                 correction_prompt.append(
                     {'role': 'assistant', 'content': check_response})
                 correction_prompt.append(
-                    {'role': 'user', 'content': "Remember to wrap the instruction in triple backticks and specify 'json'. (start response with ```json)"})
+                    {'role': 'user', 'content': "Remember to wrap the instruction in triple backticks and specify 'json' (starting with ```json)."})
                 return await self.agent_execution(correction_prompt)
-            for code_snippet in use_script:
-                try:
-                    json_instruct = json.loads(code_snippet)
-                except json.JSONDecodeError:
-                    continue
 
             if isinstance(json_instruct, list):
                 json_instruct = json_instruct[0]
             elif isinstance(json_instruct, str):
                 correction_prompt = base_prompt.copy()
                 correction_prompt.append(
-                    {'role': 'assistant', 'content': json.dumps(base_response)})
+                    {'role': 'assistant', 'content': json.dumps(check_response)})
                 correction_prompt.append(
                     {'role': 'user', 'content': "Remember to wrap the instruction in triple backticks and specify 'json' with an object containing the key 'use' and a 'value' either python or tool."})
                 return await self.agent_execution(correction_prompt)
 
             if 'use' in json_instruct and json_instruct['use'].lower() in ['yes', 'no']:
                 base_prompt.append(
-                    {'role': 'assistant', 'content': json.dumps(base_response)})
+                    {'role': 'assistant', 'content': json.dumps(check_response)})
                 ai_choice = json_instruct["use"].lower()
-                colored_print(ai_choice, Fore.BLUE)
+                colored_print(ai_choice, Fore.CYAN)
                 if ai_choice == "yes":
-                    colored_print("Was Solved", Fore.GREEN)
+                    colored_print("Problem Solved", Fore.GREEN)
                     solve_base_prompt = self.messages_context + \
                         load_message_template('answer')
                     solve_base_prompt.append(
                         {'role': 'user', 'content': f"Based on the following:\n{responses}\n\nWhat is the final answer to '{self.full_prompt}'?"})
-                    final_response = await run_inference(solve_base_prompt, self.output_text_area, self.root, self.model_var.get())
+                    final_response = run_inference(
+                        solve_base_prompt, self.output_text_area, self.root, self.model_var.get())
                     return final_response
-                elif ai_choice == "no":
-                    colored_print("Was not Solved", Fore.RED)
+                else:
+                    colored_print("Problem Not Solved", Fore.RED)
                     correction_prompt = base_prompt.copy()
                     correction_prompt.append(
-                        {'role': 'assistant', 'content': json.dumps(base_response)})
+                        {'role': 'assistant', 'content': json.dumps(check_response)})
                     correction_prompt.append(
                         {'role': 'user', 'content': "Please produce a JSON object with 'use' key and python or tool as 'value'."})
                     return await self.agent_execution(correction_prompt)
             else:
                 correction_prompt = base_prompt.copy()
                 correction_prompt.append(
-                    {'role': 'assistant', 'content': json.dumps(base_response)})
+                    {'role': 'assistant', 'content': json.dumps(check_response)})
                 correction_prompt.append(
                     {'role': 'user', 'content': "Please produce a JSON object with 'use' key and python or tool as 'value'."})
                 return await self.agent_execution(correction_prompt)
 
     def build_full_prompt(self, user_input: str) -> str:
-        full_prompt = f"{user_input}"
-        if self.text_history:
-            full_prompt += "\n".join(self.text_history)
+        codebase_path = self.codebase_path_entry.get().strip()
+        base_code = ""
+        if codebase_path:
+            try:
+                base_code_list = utils.code_corpus(codebase_path)
+                base_code = "\n".join(base_code_list)
+            except Exception as e:
+                logging.error(f"Error reading codebase: {e}")
+
+        tips = self.tips_entry.get("1.0", "end-1c").strip()
+
+        if base_code != "" and tips != "":
+            full_prompt = f"{MD_HEADING} Codebase:\n{base_code}\n\n{MD_HEADING}\n{user_input}\n\n{tips}"
+        elif base_code != "":
+            full_prompt = f"{MD_HEADING} Codebase:\n{base_code}\n\n{MD_HEADING}\n{user_input}"
+        elif tips != "":
+            full_prompt = f"{MD_HEADING}\n{user_input}\n\n{tips}"
+        else:
+            full_prompt = f"{MD_HEADING}\n{user_input}"
+
         return full_prompt
 
     def update_user_input_history(self) -> None:

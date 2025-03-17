@@ -3,17 +3,16 @@ import numpy as np
 import os
 import logging
 from typing import List
-from simple.code.utils import colored_print, strip_model_escapes
+from simple.code.utils import colored_print, strip_model_escapes, Fore
+from simple.code.logging_config import setup_logging
 
-
-logging.basicConfig(level=logging.INFO)
+# Set up logging once from the centralized module
+setup_logging()
 
 
 def create_artistic_png(data: List[float], filename: str = "gag/artistic_plot.png", style: str = "seaborn-darkgrid") -> None:
     """
     Creates an artistic PNG image from the provided data using a specified style.
-    
-    If the given style is not available, the default style is used.
     
     Enhancements:
     - Uses a custom style if available.
@@ -66,4 +65,5 @@ def create_artistic_png(data: List[float], filename: str = "gag/artistic_plot.pn
 if __name__ == "__main__":
     example_data = [1, 3, 2, 5, 7, 8, 6]
     create_artistic_png(example_data)
-    colored_print("Artistic PNG image created as 'gag/artistic_plot.png'.")
+    colored_print(
+        "Artistic PNG image created as 'gag/artistic_plot.png'.", Fore.BLUE)

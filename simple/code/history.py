@@ -3,8 +3,10 @@ import json
 from datetime import datetime
 from typing import Any, List, Optional
 import logging
+from simple.code.logging_config import setup_logging
 
-logging.basicConfig(level=logging.INFO)
+# Set up logging once from the centralized module
+setup_logging()
 
 
 class HistoryManager:

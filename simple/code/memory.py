@@ -4,8 +4,10 @@ import requests
 from tqdm import tqdm
 import chromadb
 import json
+from simple.code.logging_config import setup_logging
 
-logging.basicConfig(level=logging.INFO)
+# Set up logging once from the centralized module
+setup_logging()
 chroma_client = chromadb.Client()
 
 
@@ -45,19 +47,19 @@ def classify_embedding(query, context):
         'You will not respond as an AI assistant. You only respond "yes" or "no". '
         'Determine whether the context contains data that directly is related to the search query. '
         'If the context is seemingly exactly what the search query needs, respond "yes" if it is anything but directly '
-        'related respond "no". Do not respond "yes" unless the content is highly relevant to the search query.'
+        'related; otherwise, respond "no". Do not respond "yes" unless the content is highly relevant to the search query.'
     )
     classify_convo = [
         {'role': 'system', 'content': classify_msg},
         {'role': 'user', 'content': 'SEARCH QUERY: What is the users name? \n\nEMBEDDED CONTEXT: You are Ai Flexi. How can I help you today?'},
         {'role': 'assistant', 'content': 'yes'},
-        {'role': 'user', 'content': f'SEARCH QUERY: Llama3 Python Voice Assistant \n\nEMBEDDED CONTEXT: Siri is a voice assistant on Apple iOS and Mac OS. The voice assistant is designed to take voice prompts and help the user complete simple tasks on the device.'},
+        {'role': 'user', 'content': 'SEARCH QUERY: Llama3 Python Voice Assistant \n\nEMBEDDED CONTEXT: Siri is a voice assistant on Apple iOS and Mac OS. The voice assistant is designed to take voice prompts and help the user complete simple tasks on the device.'},
         {'role': 'assistant', 'content': 'no'},
         {'role': 'user', 'content': f'SEARCH QUERY: {query} \n\nEMBEDDED CONTEXT: {context} '}
     ]
-    user_input = f'SEARCH QUERY: {query} \n\nEMBEDDED CONTEXT: {context} '
-    classify_convo.append({'role': "user", 'content': user_input})
-    response = run_inference(user_input, classify_convo)
+    classify_convo.append(
+        {'role': "user", 'content': f'SEARCH QUERY: {query} \n\nEMBEDDED CONTEXT: {context} '})
+    response = run_inference(classify_convo, None, None, "default-model")
     return response.strip().strip().lower()
 
 
@@ -78,12 +80,12 @@ def retrieve_embeddings(queries, n_results=2):
 
 def create_queries(prompt):
     query_message = (
-        'You are a first principle reasoning search query AI agent.'
-        'Your list of search queries will be ran on an embedding database of all your conversations'
-        'you have ever had with the user. With first principles create a Python list of queries to '
-        'search the embeddings database for any data that would be necessary to have access to in '
-        'order to correctly respond to the prompt. Your response must be a Python list with no syntax errors.'
-        'Do not explain anything and do not ever generate anything but a perfect syntax Python list'
+        'You are a first principle reasoning search query AI agent. '
+        'Your list of search queries will be run on an embedding database of all your conversations '
+        'you have ever had with the user. With first principles, create a Python list of queries to '
+        'search the embeddings database for any data that would be necessary to correctly respond to the prompt. '
+        'Your response must be a Python list with no syntax errors. '
+        'Do not explain anything and do not generate anything but a perfect syntax Python list.'
     )
     query_convo = [
         {'role': 'system', 'content': query_message},
@@ -95,7 +97,7 @@ def create_queries(prompt):
             'content': '["Llama3 voice assistant", "Python voice assistant", "OpenAI TTS", "openai speak"]'},
     ]
     query_convo.append({'role': "user", 'content': prompt})
-    response = run_inference(query_convo)
+    response = run_inference(query_convo, None, None, "default-model")
     try:
         return ast.literal_eval(response)
     except Exception as e:
@@ -112,16 +114,17 @@ def create_vector_db(conversations, vector_db_name='conversations'):
     vector_db = chroma_client.create_collection(name=vector_db_name)
     for c in conversations:
         serialized_convo = f'prompt: {c["prompt"]} response: {c["response"]}'
-        embeddedText = embedText(serialized_convo)
+        embeddedTextResult = embedText(serialized_convo)
         vector_db.add(ids=[f"{c['id']}"], embeddings=[
-                      embeddedText], documents=[serialized_convo])
+                      embeddedTextResult], documents=[serialized_convo])
 
 
 def example_usage(user_input):
     queries = create_queries(user_input)
     embeddings = retrieve_embeddings(queries)
     prompt = f'MEMORIES: {embeddings}\n\nUSER PROMPT: {user_input}'
-    response = run_inference({'role': "user", 'content': prompt})
+    response = run_inference(
+        [{'role': "user", 'content': prompt}], None, None, "default-model")
     return True
 
 
@@ -129,13 +132,10 @@ def add_response_to_db(response: str, response_id: str, vector_db_name: str = 'c
     """
     Adds the AI's valid response to the chromadb vector database.
     
-    This function embeds the response using embedText() and then adds the response
-    (with its embedding and a unique ID) to the specified collection.
-    
     Args:
         response (str): The AI's valid response text.
         response_id (str): A unique identifier for this response.
-        vector_db_name (str): The name of the vector DB collection (default is 'conversations').
+        vector_db_name (str): The name of the vector DB collection.
     """
     collection = get_or_create_collection(vector_db_name)
     embedding = embedText(response)

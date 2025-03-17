@@ -2,15 +2,15 @@ import tempfile
 import subprocess
 import os
 import logging
-
 from simple.code.system_prompts import tool_registry
+
 
 def execute_python_code(code: str) -> dict:
     """
     Executes a string of Python code in a separate process.
     Writes the code to a temporary file and runs it via the system Python interpreter.
     Returns:
-        Dict[str, str]: A dictionary with "status" and "message".
+        dict: A dictionary with "status" and "message".
     """
     result = {"status": "", "message": ""}
     temp_filename = None
@@ -66,7 +66,6 @@ def execute_tool(instruction: dict) -> dict:
             raise Exception("Tool returned None (possibly an error).")
         result['status'] = "200"
         result['message'] = f"Execution successful\nResult:\n{output}"
-        
     except Exception as e:
         logging.error(f"Error executing tool {tool_name}: {e}")
         result['status'] = "500"

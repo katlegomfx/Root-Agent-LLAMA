@@ -1,18 +1,19 @@
 import os
 import re
 import sys
+import json
 from typing import List
 from colorama import Fore, Style
-
-
 from simple.code.system_prompts import MD_HEADING
 
-ESC_LIKE_PATTERN = re.compile(r'(←\[\d+m)')
+# Pattern to remove artifacts like '←[0m' or '[0m'
+ESC_LIKE_PATTERN = re.compile(r'(?:←)?\[\d+m')
 USE_COLOR = sys.stdout.isatty()
+
 
 def strip_model_escapes(text: str) -> str:
     """
-    Removes leftover model-generated sequences like '←[0m' or '←[33m' 
+    Removes leftover model-generated sequences like '←[0m', '[0m', or '←[33m'
     that are not real ANSI escapes but textual artifacts.
     """
     return ESC_LIKE_PATTERN.sub('', text)
@@ -27,6 +28,7 @@ def colored_print(text: str, color: str = Fore.RESET, end: str = "\n", flush: bo
         print(f"{color}{text}{Style.RESET_ALL}", end=end, flush=flush)
     else:
         print(text, end=end, flush=flush)
+
 
 def get_py_files_recursive(directory: str, exclude_dirs: List[str] = None, exclude_files: List[str] = None) -> List[str]:
     """
@@ -96,3 +98,26 @@ def code_corpus(directory: str) -> List[str]:
         except Exception as e:
             print(f"Error processing {file_path}: {e}")
     return corpus
+
+
+def extract_json_block(text: str) -> dict:
+    """
+    Extracts the first valid JSON object wrapped in triple backticks and labeled as json.
+    
+    Raises:
+        ValueError: If no valid JSON block is found.
+    
+    Returns:
+        dict: The parsed JSON object.
+    """
+    pattern = r"```json\s*\n(.*?)```"
+    matches = re.findall(pattern, text, re.DOTALL)
+    if not matches:
+        raise ValueError("No JSON block found in the text.")
+    for block in matches:
+        try:
+            json_obj = json.loads(block.strip())
+            return json_obj
+        except json.JSONDecodeError:
+            continue
+    raise ValueError("No valid JSON block found in the text.")
