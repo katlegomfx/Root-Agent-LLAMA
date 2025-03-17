@@ -1,7 +1,13 @@
 import asyncio
+import nest_asyncio
 from typing import List, Any
 from ollama import AsyncClient
 import logging
+
+from simple.code.utils import colored_print, strip_model_escapes
+
+# Apply nest_asyncio to allow nested event loops.
+nest_asyncio.apply()
 
 logging.basicConfig(level=logging.INFO)
 
@@ -16,7 +22,8 @@ class InferenceClient:
 
     async def chat(self, messages: List[dict], widget: Any, root: Any) -> str:
         try:
-            response_generator = await self.client.chat(model=self.model_name, messages=messages, stream=True)
+            response_generator = await self.client.chat(
+                model=self.model_name, messages=messages, stream=True)
         except Exception as e:
             logging.error(f"Error starting chat: {e}")
             return f"Error starting inference: {e}"
@@ -34,8 +41,9 @@ class InferenceClient:
                 root.after(0, append_text, "\n[Inference cancelled]")
                 break
             section = part.get("message", {}).get("content", "")
-            full_text += section
-            print(section, end="", flush=True)
+            clean_section = strip_model_escapes(section)
+            full_text += clean_section
+            colored_print(clean_section, end="", flush=True)
             root.after(0, append_text, section)
         logging.info("Inference completed.")
         return full_text
@@ -47,8 +55,9 @@ class InferenceClient:
 def run_inference(messages: List[dict], widget: Any, root: Any, model_name: str) -> str:
     global current_client
     client = InferenceClient(model_name)
-    current_client = client  
+    current_client = client
     try:
+        # With nest_asyncio applied, asyncio.run works even if another loop is running.
         result = asyncio.run(client.chat(messages, widget, root))
     except Exception as e:
         logging.error(f"Error during inference: {e}")

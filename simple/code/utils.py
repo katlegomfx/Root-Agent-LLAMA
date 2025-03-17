@@ -1,9 +1,32 @@
 import os
 import re
+import sys
 from typing import List
+from colorama import Fore, Style
+
 
 from simple.code.system_prompts import MD_HEADING
 
+ESC_LIKE_PATTERN = re.compile(r'(←\[\d+m)')
+USE_COLOR = sys.stdout.isatty()
+
+def strip_model_escapes(text: str) -> str:
+    """
+    Removes leftover model-generated sequences like '←[0m' or '←[33m' 
+    that are not real ANSI escapes but textual artifacts.
+    """
+    return ESC_LIKE_PATTERN.sub('', text)
+
+
+def colored_print(text: str, color: str = Fore.RESET, end: str = "\n", flush: bool = False):
+    """
+    Prints the given text in the specified color, resetting style afterward.
+    Only prints color codes if USE_COLOR is True.
+    """
+    if USE_COLOR:
+        print(f"{color}{text}{Style.RESET_ALL}", end=end, flush=flush)
+    else:
+        print(text, end=end, flush=flush)
 
 def get_py_files_recursive(directory: str, exclude_dirs: List[str] = None, exclude_files: List[str] = None) -> List[str]:
     """

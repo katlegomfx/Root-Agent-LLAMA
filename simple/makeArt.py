@@ -3,6 +3,8 @@ import numpy as np
 import os
 import logging
 from typing import List
+from simple.code.utils import colored_print, strip_model_escapes
+
 
 logging.basicConfig(level=logging.INFO)
 
@@ -64,4 +66,4 @@ def create_artistic_png(data: List[float], filename: str = "gag/artistic_plot.pn
 if __name__ == "__main__":
     example_data = [1, 3, 2, 5, 7, 8, 6]
     create_artistic_png(example_data)
-    print("Artistic PNG image created as 'gag/artistic_plot.png'.")
+    colored_print("Artistic PNG image created as 'gag/artistic_plot.png'.")

@@ -66,6 +66,7 @@ def execute_tool(instruction: dict) -> dict:
             raise Exception("Tool returned None (possibly an error).")
         result['status'] = "200"
         result['message'] = f"Execution successful\nResult:\n{output}"
+        
     except Exception as e:
         logging.error(f"Error executing tool {tool_name}: {e}")
         result['status'] = "500"
