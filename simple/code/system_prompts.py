@@ -5,7 +5,7 @@ from typing import Any, List, Dict
 import logging
 from simple.code.logging_config import setup_logging
 
-# Set up logging once from the centralized module
+# Centralized logging setup
 setup_logging()
 
 thesysname = "You are Flexi💻AI."
@@ -97,28 +97,25 @@ def load_message_template(sys_type: str = 'base', summary: str = '') -> List[Dic
 """
         message = [{'role': 'system', 'content': content.strip()}]
     elif sys_type == "answer":
-        content = f"""{MD_HEADING} {thesysname}, an advanced AI agent, answer as best you can using only the information provided."""
+        content = f"{MD_HEADING} {thesysname}, answer using only the provided information."
         message = [{'role': 'system', 'content': content.strip()}]
     elif sys_type == "check":
         content = f"""
-{MD_HEADING} {thesysname}, an advanced AI agent capable of reflection and tool usage.
-{MD_HEADING} You must handle user requests by reasoning step by step:
-{MD_HEADING} 1) Understand the user request.
-{MD_HEADING} 2) Decide if the user's request was achieved.
-{MD_HEADING} Respond with your decision in a JSON object wrapped in triple backticks.
-{MD_HEADING} Schema Example:
+{MD_HEADING} {thesysname}, determine if the user's request was fulfilled.
+{MD_HEADING} Respond in a JSON object wrapped in triple backticks.
+{MD_HEADING} Example:
     {TRIPLE_BACKTICKS}json
-    {{"use": "<yes or no>"}}
+    {{"use": "yes"}}
     {TRIPLE_BACKTICKS}
 """
         message = [{'role': 'system', 'content': content.strip()}]
     elif sys_type == "tool":
-        content = f"""{MD_HEADING} {thesysname}, an advanced AI agent with tool usage capabilities.
+        content = f"""
+{MD_HEADING} {thesysname}, you have tool usage capabilities.
 {MD_HEADING} Steps:
 1) Understand the user request.
-2) If a tool is required, output a JSON instruction wrapped in triple backticks.
-3) If the tool execution fails, reflect on the error and try again with corrected parameters.
-4) Provide the final result or explanation.
+2) If a tool is needed, output a JSON instruction (wrapped in triple backticks).
+3) If execution fails, adjust parameters and try again.
 {MD_HEADING} Available Tools:
 Names: [{", ".join(tool_registry.keys())}]
 Documentation: [{", ".join([(tool_registry[tool].__doc__ or "").strip() for tool in tool_registry.keys()])}]

@@ -9,7 +9,7 @@ from simple.code.logging_config import setup_logging
 # Apply nest_asyncio to allow nested event loops.
 nest_asyncio.apply()
 
-# Set up logging once from the centralized module
+# Centralized logging setup
 setup_logging()
 
 current_client = None
@@ -35,7 +35,6 @@ class InferenceClient:
             widget.see("end")
 
         root.after(0, append_text, "\n")
-
         logging.info("Starting inference chat...")
         async for part in response_generator:
             if self.cancelled:

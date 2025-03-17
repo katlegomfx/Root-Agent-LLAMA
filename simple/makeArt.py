@@ -6,20 +6,20 @@ from typing import List
 from simple.code.utils import colored_print, strip_model_escapes, Fore
 from simple.code.logging_config import setup_logging
 
-# Set up logging once from the centralized module
+# Centralized logging setup
 setup_logging()
 
 
 def create_artistic_png(data: List[float], filename: str = "gag/artistic_plot.png", style: str = "seaborn-darkgrid") -> None:
     """
     Creates an artistic PNG image from the provided data using a specified style.
-    
+
     Enhancements:
     - Uses a custom style if available.
     - Colors data points using a colormap.
     - Combines scatter and line plots.
     - Adds annotations for each data point.
-    
+
     Args:
         data (List[float]): List of numeric values to plot.
         filename (str, optional): Output file path for the PNG image.

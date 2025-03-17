@@ -6,7 +6,7 @@ import chromadb
 import json
 from simple.code.logging_config import setup_logging
 
-# Set up logging once from the centralized module
+# Centralized logging setup
 setup_logging()
 chroma_client = chromadb.Client()
 
@@ -45,15 +45,14 @@ def classify_embedding(query, context):
     classify_msg = (
         'You are an embedding classification AI agent. Your input will be a prompt and one embedded chunk of text. '
         'You will not respond as an AI assistant. You only respond "yes" or "no". '
-        'Determine whether the context contains data that directly is related to the search query. '
-        'If the context is seemingly exactly what the search query needs, respond "yes" if it is anything but directly '
-        'related; otherwise, respond "no". Do not respond "yes" unless the content is highly relevant to the search query.'
+        'Determine whether the context directly relates to the search query. '
+        'If the context matches the search query requirements, respond "yes"; otherwise, respond "no".'
     )
     classify_convo = [
         {'role': 'system', 'content': classify_msg},
         {'role': 'user', 'content': 'SEARCH QUERY: What is the users name? \n\nEMBEDDED CONTEXT: You are Ai Flexi. How can I help you today?'},
         {'role': 'assistant', 'content': 'yes'},
-        {'role': 'user', 'content': 'SEARCH QUERY: Llama3 Python Voice Assistant \n\nEMBEDDED CONTEXT: Siri is a voice assistant on Apple iOS and Mac OS. The voice assistant is designed to take voice prompts and help the user complete simple tasks on the device.'},
+        {'role': 'user', 'content': 'SEARCH QUERY: Llama3 Python Voice Assistant \n\nEMBEDDED CONTEXT: Siri is a voice assistant on Apple iOS and Mac OS.'},
         {'role': 'assistant', 'content': 'no'},
         {'role': 'user', 'content': f'SEARCH QUERY: {query} \n\nEMBEDDED CONTEXT: {context} '}
     ]
@@ -81,18 +80,15 @@ def retrieve_embeddings(queries, n_results=2):
 def create_queries(prompt):
     query_message = (
         'You are a first principle reasoning search query AI agent. '
-        'Your list of search queries will be run on an embedding database of all your conversations '
-        'you have ever had with the user. With first principles, create a Python list of queries to '
-        'search the embeddings database for any data that would be necessary to correctly respond to the prompt. '
-        'Your response must be a Python list with no syntax errors. '
-        'Do not explain anything and do not generate anything but a perfect syntax Python list.'
+        'Generate a Python list of queries to search an embedding database for data needed to respond to the prompt. '
+        'Return only a syntactically correct Python list.'
     )
     query_convo = [
         {'role': 'system', 'content': query_message},
-        {'role': 'user', 'content': 'Write an email to my car insurance company and create a persuasive request for them to lower my rates.'},
+        {'role': 'user', 'content': 'Write an email to my car insurance company and request lower rates.'},
         {'role': 'assistant',
-            'content': '["What is the user\'s name?", "What is the user\'s current auto insurance provider?", "What is the current monthly rate the user pays?"]'},
-        {'role': 'user', 'content': 'how can I convert the speak function in my llama3 python voice assistant to use pyttsx3 instead'},
+            'content': '["What is the user\'s name?", "Who is the current auto insurer?", "What is the current monthly rate?"]'},
+        {'role': 'user', 'content': 'How can I convert the speak function in my llama3 python voice assistant to use pyttsx3 instead?'},
         {'role': 'assistant',
             'content': '["Llama3 voice assistant", "Python voice assistant", "OpenAI TTS", "openai speak"]'},
     ]
@@ -131,7 +127,7 @@ def example_usage(user_input):
 def add_response_to_db(response: str, response_id: str, vector_db_name: str = 'conversations'):
     """
     Adds the AI's valid response to the chromadb vector database.
-    
+
     Args:
         response (str): The AI's valid response text.
         response_id (str): A unique identifier for this response.

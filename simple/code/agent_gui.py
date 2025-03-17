@@ -10,7 +10,7 @@
 # - text area scratchpad for run inference to show each step taken
 # - the agent should work on the task in the scratchpad continuously until the retries run out or the task is complete
 # - the final response should be written to the output area
-
+import os
 import tkinter as tk
 from tkinter import filedialog
 from tkinter.scrolledtext import ScrolledText
@@ -20,7 +20,6 @@ import json
 import re
 from typing import List
 import logging
-import traceback
 
 from simple.code import utils, memory
 from simple.code.utils import colored_print, Fore, extract_json_block
@@ -30,7 +29,7 @@ from simple.code.function_call import execute_python_code, execute_tool
 from simple.code.system_prompts import MD_HEADING, tool_registry, load_message_template
 from simple.code.logging_config import setup_logging
 
-# Set up logging once from the centralized module
+# Centralized logging setup
 setup_logging()
 
 triple_backticks = '`' * 3
@@ -39,13 +38,14 @@ triple_backticks = '`' * 3
 class FlexiAgentApp:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
-        self.root.title("Flexi AI Agent")
+        self.root.title("Flexi💻AI")
+        self.set_app_icon()
         self.summary = ""
         self.messages_context = []  # initial system prompt context
         self.text_history = []
         self.model_var = tk.StringVar(value="llama3.2")
 
-        # Create main container frame with padding
+        # Main container with padding
         main_frame = tk.Frame(root, padx=10, pady=10)
         main_frame.pack(fill=tk.BOTH, expand=True)
 
@@ -56,6 +56,7 @@ class FlexiAgentApp:
         self.model_entry = tk.Entry(model_frame, textvariable=self.model_var)
         self.model_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
+        # Directory and tips frame for agent context
         directory_frame = tk.Frame(main_frame)
         directory_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 5))
         tk.Label(directory_frame, text="Agent Work Directory:").grid(
@@ -65,7 +66,6 @@ class FlexiAgentApp:
             row=0, column=1, padx=5, pady=5, sticky="ew")
         tk.Label(directory_frame, text="Additional Tips:").grid(
             row=1, column=0, sticky="w")
-        tk.Label(directory_frame, text="Choose a directory:").pack(anchor="w")
         self.tips_entry = tk.Text(directory_frame, height=3)
         self.tips_entry.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
 
@@ -105,17 +105,31 @@ class FlexiAgentApp:
             history_frame, height=10, state=tk.DISABLED, bg="lightblue")
         self.user_history.pack(fill=tk.BOTH, expand=True)
 
+    def set_app_icon(self) -> None:
+        try:
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            icon_path = os.path.normpath(os.path.join(
+                current_dir, "..", "gag", "artistic_plot.png"))
+            if not os.path.exists(icon_path):
+                from simple.makeArt import create_artistic_png
+                default_data = [1, 3, 2, 5, 7, 8, 6]
+                create_artistic_png(default_data, filename=icon_path)
+                logging.info(
+                    f"Icon file not found. Generated new icon at: {icon_path}")
+            icon = tk.PhotoImage(file=icon_path)
+            self.root.iconphoto(True, icon)
+        except Exception as e:
+            logging.error(f"Failed to load custom icon: {e}")
+
+
     def run_async_in_thread(self, coroutine, callback):
-        """
-        Runs an async coroutine in a separate thread and calls the callback with the result.
-        """
+        """Runs an async coroutine in a separate thread and calls the callback with the result."""
         def worker():
             try:
                 result = asyncio.run(coroutine)
             except Exception as e:
                 logging.exception("Error in asynchronous coroutine")
                 result = f"Error: {str(e)}"
-            # Schedule the callback on the Tkinter main thread
             self.root.after(0, callback, result)
         threading.Thread(target=worker).start()
 
@@ -125,29 +139,26 @@ class FlexiAgentApp:
             return
         self.full_prompt = self.build_full_prompt(user_input)
         self.submit_button.config(state=tk.DISABLED)
-        # Store the prompt as a dictionary; if needed, convert to a list when used.
+        # Store prompt as a dict (convert to list later if needed)
         self.text_prompt = {'role': 'user', 'content': self.full_prompt}
         self.update_user_input_history()
         self.output_text_area.delete("1.0", tk.END)
         self.agent_scratchpad_text_area.delete("1.0", tk.END)
-
-        # Run the async decision-making in a separate thread
+        # Run the asynchronous decision-making process
         self.run_async_in_thread(self.decide_execution(
             self.text_prompt), self.handle_response)
 
     def handle_response(self, response: str) -> None:
-        """
-        Updates the UI with the final response and re-enables the submit button.
-        """
+        """Updates the UI with the final response and re-enables the submit button."""
         if isinstance(self.text_prompt, dict):
             self.text_prompt = [self.text_prompt]
         self.text_prompt.append({'role': 'assistant', 'content': response})
-        self.output_text_area.insert(tk.END, '\n' + response)
+        self.output_text_area.insert(tk.END, "\n" + response)
         self.submit_button.config(state=tk.NORMAL)
 
     @staticmethod
     def extract_code_blocks(text: str, language: str) -> list:
-        # Modified regex to allow for a newline between the triple backticks and the language
+        # Regex to extract code blocks (triple backticks followed by language)
         pattern = rf"```(?:\n\s*)*{re.escape(language)}\s*\n(.*?)```"
         return re.findall(pattern, text, re.DOTALL)
 
@@ -180,7 +191,7 @@ class FlexiAgentApp:
                 correction_prompt.append(
                     {'role': 'assistant', 'content': json.dumps(base_response)})
                 correction_prompt.append(
-                    {'role': 'user', 'content': "Remember to wrap the instruction in triple backticks and specify 'json' with an object containing tool and parameters."})
+                    {'role': 'user', 'content': "Wrap the instruction in triple backticks with a JSON object containing tool and parameters."})
                 return await self.tool_use(correction_prompt)
             status_message = execute_tool(json_instruct)
             if status_message['status'] != "200":
@@ -237,7 +248,7 @@ class FlexiAgentApp:
             correction_prompt.append(
                 {'role': 'assistant', 'content': base_response})
             correction_prompt.append(
-                {'role': 'user', 'content': "Remember to wrap the instruction in triple backticks and specify 'json' (starting with ```json)."})
+                {'role': 'user', 'content': "Wrap the instruction in triple backticks and specify 'json' (starting with ```json)."})
             return await self.agent_execution(correction_prompt)
 
         responses = []
@@ -248,7 +259,7 @@ class FlexiAgentApp:
             correction_prompt.append(
                 {'role': 'assistant', 'content': json.dumps(base_response)})
             correction_prompt.append(
-                {'role': 'user', 'content': "Remember to wrap the instruction in triple backticks and specify 'json' with an object containing the key 'use' and a 'value' either python or tool."})
+                {'role': 'user', 'content': "Wrap the instruction in triple backticks with a JSON object containing the key 'use' and a value of either python or tool."})
             return await self.agent_execution(correction_prompt)
 
         if 'use' in json_instruct and json_instruct['use'].lower() in ['python', 'tool']:
@@ -268,7 +279,6 @@ class FlexiAgentApp:
                     'status': status_message,
                     'request': py_base_prompt
                 })
-
             elif ai_choice == "tool":
                 colored_print("Starting Tool Use", Fore.BLUE)
                 tool_base_prompt = self.messages_context + \
@@ -286,7 +296,7 @@ class FlexiAgentApp:
             correction_prompt.append(
                 {'role': 'assistant', 'content': json.dumps(base_response)})
             correction_prompt.append(
-                {'role': 'user', 'content': "Please produce a JSON object with 'use' key and python or tool as 'value'."})
+                {'role': 'user', 'content': "Produce a JSON object with a 'use' key and value either python or tool."})
             return await self.agent_execution(correction_prompt)
 
         if responses:
@@ -294,19 +304,18 @@ class FlexiAgentApp:
             check_prompt = self.messages_context + \
                 load_message_template('check', self.summary)
             check_prompt.append(
-                {'role': 'user', 'content': f"Based on the following:\n{responses}\n\nWas the request {self.full_prompt} answered?"})
+                {'role': 'user', 'content': f"Based on the following:\n{responses}\n\nWas the request '{self.full_prompt}' answered?"})
             check_response = run_inference(
                 check_prompt, self.agent_scratchpad_text_area, self.root, self.model_var.get())
 
             try:
-                # Use check_response instead of base_response here
                 json_instruct = extract_json_block(check_response)
             except ValueError:
                 correction_prompt = base_prompt.copy()
                 correction_prompt.append(
                     {'role': 'assistant', 'content': check_response})
                 correction_prompt.append(
-                    {'role': 'user', 'content': "Remember to wrap the instruction in triple backticks and specify 'json' (starting with ```json)."})
+                    {'role': 'user', 'content': "Wrap the check response in triple backticks and specify 'json' (starting with ```json)."})
                 return await self.agent_execution(correction_prompt)
 
             if isinstance(json_instruct, list):
@@ -316,7 +325,7 @@ class FlexiAgentApp:
                 correction_prompt.append(
                     {'role': 'assistant', 'content': json.dumps(check_response)})
                 correction_prompt.append(
-                    {'role': 'user', 'content': "Remember to wrap the instruction in triple backticks and specify 'json' with an object containing the key 'use' and a 'value' either python or tool."})
+                    {'role': 'user', 'content': "Wrap the check response in triple backticks with a JSON object containing the key 'use' and a value either python or tool."})
                 return await self.agent_execution(correction_prompt)
 
             if 'use' in json_instruct and json_instruct['use'].lower() in ['yes', 'no']:
@@ -339,14 +348,14 @@ class FlexiAgentApp:
                     correction_prompt.append(
                         {'role': 'assistant', 'content': json.dumps(check_response)})
                     correction_prompt.append(
-                        {'role': 'user', 'content': "Please produce a JSON object with 'use' key and python or tool as 'value'."})
+                        {'role': 'user', 'content': "Produce a JSON object with a 'use' key and value either python or tool."})
                     return await self.agent_execution(correction_prompt)
             else:
                 correction_prompt = base_prompt.copy()
                 correction_prompt.append(
                     {'role': 'assistant', 'content': json.dumps(check_response)})
                 correction_prompt.append(
-                    {'role': 'user', 'content': "Please produce a JSON object with 'use' key and python or tool as 'value'."})
+                    {'role': 'user', 'content': "Produce a JSON object with a 'use' key and value either python or tool."})
                 return await self.agent_execution(correction_prompt)
 
     def build_full_prompt(self, user_input: str) -> str:
@@ -361,15 +370,15 @@ class FlexiAgentApp:
 
         tips = self.tips_entry.get("1.0", "end-1c").strip()
 
-        if base_code != "" and tips != "":
-            full_prompt = f"{MD_HEADING} Codebase:\n{base_code}\n\n{MD_HEADING}\n{user_input}\n\n{tips}"
-        elif base_code != "":
-            full_prompt = f"{MD_HEADING} Codebase:\n{base_code}\n\n{MD_HEADING}\n{user_input}"
-        elif tips != "":
-            full_prompt = f"{MD_HEADING}\n{user_input}\n\n{tips}"
+        # Combine codebase, user input, and additional tips if provided.
+        if base_code and tips:
+            full_prompt = f"{MD_HEADING} Codebase:\n{base_code}\n\n{MD_HEADING} Request:\n{user_input}\n\nTips:\n{tips}"
+        elif base_code:
+            full_prompt = f"{MD_HEADING} Codebase:\n{base_code}\n\n{MD_HEADING} Request:\n{user_input}"
+        elif tips:
+            full_prompt = f"{MD_HEADING} Request:\n{user_input}\n\nTips:\n{tips}"
         else:
-            full_prompt = f"{MD_HEADING}\n{user_input}"
-
+            full_prompt = f"{MD_HEADING} Request:\n{user_input}"
         return full_prompt
 
     def update_user_input_history(self) -> None:

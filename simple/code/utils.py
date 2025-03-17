@@ -6,23 +6,21 @@ from typing import List
 from colorama import Fore, Style
 from simple.code.system_prompts import MD_HEADING
 
-# Pattern to remove artifacts like '←[0m' or '[0m'
+# Pattern to remove model artifacts (e.g., '←[0m')
 ESC_LIKE_PATTERN = re.compile(r'(?:←)?\[\d+m')
 USE_COLOR = sys.stdout.isatty()
 
 
 def strip_model_escapes(text: str) -> str:
     """
-    Removes leftover model-generated sequences like '←[0m', '[0m', or '←[33m'
-    that are not real ANSI escapes but textual artifacts.
+    Removes model-generated sequences (like '←[0m') that are not true ANSI escapes.
     """
     return ESC_LIKE_PATTERN.sub('', text)
 
 
 def colored_print(text: str, color: str = Fore.RESET, end: str = "\n", flush: bool = False):
     """
-    Prints the given text in the specified color, resetting style afterward.
-    Only prints color codes if USE_COLOR is True.
+    Prints text in the specified color (if terminal supports it), then resets style.
     """
     if USE_COLOR:
         print(f"{color}{text}{Style.RESET_ALL}", end=end, flush=flush)
@@ -32,15 +30,7 @@ def colored_print(text: str, color: str = Fore.RESET, end: str = "\n", flush: bo
 
 def get_py_files_recursive(directory: str, exclude_dirs: List[str] = None, exclude_files: List[str] = None) -> List[str]:
     """
-    Recursively searches for Python files in a directory.
-
-    Args:
-        directory (str): The directory to search in.
-        exclude_dirs (List[str], optional): Directories to exclude. Defaults to ['venv'].
-        exclude_files (List[str], optional): Files to exclude. Defaults to [].
-
-    Returns:
-        List[str]: List of file paths to Python files.
+    Recursively finds Python files in a directory, excluding specified directories and files.
     """
     if exclude_dirs is None:
         exclude_dirs = ['venv']
@@ -57,13 +47,7 @@ def get_py_files_recursive(directory: str, exclude_dirs: List[str] = None, exclu
 
 def read_file_content(path: str) -> str:
     """
-    Reads the entire content of a file.
-
-    Args:
-        path (str): The file path.
-
-    Returns:
-        str: The content of the file.
+    Reads and returns the content of a file.
     """
     try:
         with open(path, 'r', encoding='utf-8') as f:
@@ -76,14 +60,7 @@ def read_file_content(path: str) -> str:
 
 def code_corpus(directory: str) -> List[str]:
     """
-    Reads the content of all Python files in a directory,
-    excluding specified files and directories.
-
-    Args:
-        directory (str): The root directory of the codebase.
-
-    Returns:
-        List[str]: A list of strings containing file paths and content.
+    Builds a corpus by reading all Python files in the directory, excluding certain files and folders.
     """
     exclude_files = ['craze.py', 'ibot.py', 'nextBuilderIntegration.py']
     exclude_dirs = ['interest', 'pyds', 'backup', 'models', 'sdlc',
@@ -102,13 +79,10 @@ def code_corpus(directory: str) -> List[str]:
 
 def extract_json_block(text: str) -> dict:
     """
-    Extracts the first valid JSON object wrapped in triple backticks and labeled as json.
+    Extracts and returns the first valid JSON object found within triple backticks labeled as json.
     
     Raises:
         ValueError: If no valid JSON block is found.
-    
-    Returns:
-        dict: The parsed JSON object.
     """
     pattern = r"```json\s*\n(.*?)```"
     matches = re.findall(pattern, text, re.DOTALL)
