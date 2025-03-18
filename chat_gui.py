@@ -14,6 +14,7 @@ import logging
 from typing import List
 
 from simple.code import utils, memory
+from simple.code.function_call import execute_tool
 from simple.code.inference import run_inference, current_client
 from simple.code.history import HistoryManager
 from simple.code.system_prompts import MD_HEADING, load_message_template

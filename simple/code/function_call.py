@@ -2,44 +2,8 @@ import tempfile
 import subprocess
 import os
 import logging
-from simple.code.system_prompts import tool_registry
 
-
-def execute_python_code(code: str) -> dict:
-    """
-    Executes a string of Python code in a separate process.
-    Writes the code to a temporary file and runs it via the system Python interpreter.
-    
-    Returns:
-        dict: A dictionary with "status" and "message".
-    """
-    result = {"status": "", "message": ""}
-    temp_filename = None
-    try:
-        with tempfile.NamedTemporaryFile("w", delete=False, suffix=".py") as temp_file:
-            temp_file.write(code)
-            temp_filename = temp_file.name
-        process = subprocess.Popen(
-            ["python", temp_filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate()
-        if process.returncode != 0:
-            result['status'] = "500"
-            result[
-                'message'] = f"Execution failed with exit code {process.returncode}:\n{stderr.decode('utf-8')}"
-        else:
-            result['status'] = "200"
-            result['message'] = "Execution successful\nResult:\n" + \
-                stdout.decode('utf-8')
-    except Exception as e:
-        result['status'] = "500"
-        result['message'] = f"Execution failed:\n{str(e)}"
-    finally:
-        if temp_filename and os.path.exists(temp_filename):
-            try:
-                os.remove(temp_filename)
-            except Exception:
-                pass
-    return result
+# Removed: from simple.code.tool_registry import tool_registry
 
 
 def execute_tool(instruction: dict) -> dict:
@@ -53,12 +17,17 @@ def execute_tool(instruction: dict) -> dict:
         result['status'] = "500"
         result['message'] = "Error: No tool specified."
         return result
+
+    # Import tool_registry locally to avoid circular dependency
+    from simple.code.tool_registry import tool_registry
+
     tool_func = tool_registry.get(tool_name)
     if not tool_func:
         logging.error(f"Tool {tool_name} not found in registry.")
         result['status'] = "500"
         result['message'] = f"Error: Tool {tool_name} not found."
         return result
+
     params = instruction.get('parameters')
     try:
         logging.info(f"Executing tool: {tool_name} with parameters: {params}")
@@ -72,3 +41,27 @@ def execute_tool(instruction: dict) -> dict:
         result['status'] = "500"
         result['message'] = f"Execution failed:\n{str(e)}"
     return result
+
+
+def write_custom_python_file(file_path: str, code: str) -> None:
+    """
+    Writes the provided code to a Python file under the folder 'simple/code/custom'.
+    """
+    base_folder = os.path.join("simple", "code", "custom")
+    os.makedirs(base_folder, exist_ok=True)
+    full_path = os.path.join(base_folder, file_path)
+    with open(full_path, "w", encoding="utf-8") as f:
+        f.write(code)
+    print(f"File successfully written to: {full_path}")
+
+
+if __name__ == "__main__":
+    # Example usage:
+    file_path = "example.py"  # File will be created as simple/code/custom/example.py
+    code = (
+        "def hello_world():\n"
+        "    print('Hello, world!')\n\n"
+        "if __name__ == '__main__':\n"
+        "    hello_world()\n"
+    )
+    write_custom_python_file(file_path, code)

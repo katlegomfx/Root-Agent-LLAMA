@@ -1,9 +1,15 @@
+import glob
+import importlib
+import inspect
+import importlib.util
 import os
 from datetime import datetime
 import subprocess
 from typing import Any, List, Dict
 import logging
+import inspect
 from simple.code.logging_config import setup_logging
+from simple.code.tool_registry import tool_registry
 
 # Centralized logging setup
 setup_logging()
@@ -48,10 +54,7 @@ def execute_bash_command(command: any) -> str:
         logging.error(f"Error in bash command: {e}")
         return ""
 
-
-tool_registry = {
-    execute_bash_command.__name__: execute_bash_command,
-}
+# (Other parts of the file remain unchanged.)
 
 
 def add_context_to_messages(messages: List[Dict[str, str]], summary: str) -> List[Dict[str, str]]:
@@ -75,7 +78,7 @@ def load_message_template(sys_type: str = 'base', summary: str = '') -> List[Dic
 {MD_HEADING} 2) Choose if you will use a tool or python.
 {MD_HEADING} Respond with your choice in a JSON object wrapped in triple backticks.
 {MD_HEADING} Usage:
-- Provide a **JSON** response wrapped in triple backticks and with JSON indicated (start with {TRIPLE_BACKTICKS}json)
+- Provide a **JSON** response wrapped in triple backticks (starting with {TRIPLE_BACKTICKS}json).
 - The response should contain the name of the executor to use (either "python" or "tool").
 - Schema Example:
     {TRIPLE_BACKTICKS}json
