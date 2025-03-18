@@ -11,11 +11,12 @@ def extract_functions_with_instruction(file_path: str) -> Dict[str, Callable]:
 
     functions = {}
     for node in ast.walk(parsed):
+        print(type(node))
         if isinstance(node, ast.FunctionDef):
             params = [arg.arg for arg in node.args.args]
             module_name = os.path.splitext(os.path.basename(file_path))[0]
             spec = importlib.util.spec_from_file_location(
-                module_name, file_path)
+                    module_name, file_path)
             if spec and spec.loader:
                 module = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(module)
@@ -26,6 +27,7 @@ def extract_functions_with_instruction(file_path: str) -> Dict[str, Callable]:
 
 
 def load_custom_tools(custom_dir: str = os.path.join("simple", "code", "custom")) -> Dict[str, Callable]:
+    print(os.listdir(custom_dir))
     registry = {}
     py_files = glob.glob(os.path.join(custom_dir, "*.py"))
     for file in py_files:
@@ -35,6 +37,7 @@ def load_custom_tools(custom_dir: str = os.path.join("simple", "code", "custom")
 
 def load_builtin_tools() -> Dict[str, Callable]:
     builtin_path = os.path.join("simple", "code", "function_call.py")
+    print(os.listdir(os.path.join("simple", "code")))
     return extract_functions_with_instruction(builtin_path)
 
 
@@ -50,3 +53,6 @@ tool_registry = get_tool_registry()
 def get_tool_docs():
     return {name: (func.__doc__ or "No documentation provided").strip()
             for name, func in tool_registry.items()}
+
+
+print(tool_registry)

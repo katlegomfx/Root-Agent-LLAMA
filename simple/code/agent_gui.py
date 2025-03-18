@@ -25,8 +25,7 @@ from simple.code import utils, memory
 from simple.code.utils import colored_print, Fore, extract_json_block
 from simple.code.inference import run_inference
 from simple.code.history import HistoryManager
-from simple.code.function_call import execute_tool
-from simple.code.code_execute import execute_python_code
+from simple.code.code_execute import execute_python_code, execute_tool
 from simple.code.system_prompts import MD_HEADING, load_message_template
 from simple.code.logging_config import setup_logging
 

@@ -1,17 +1,8 @@
-import glob
-import importlib
-import inspect
 import importlib.util
-import os
-from datetime import datetime
-import subprocess
-from typing import Any, List, Dict
-import logging
+from typing import List, Dict
 import inspect
 from simple.code.logging_config import setup_logging
-from simple.code.tool_registry import tool_registry
-
-# Centralized logging setup
+from simple.code.tool_registry import tool_registry, get_tool_docs
 setup_logging()
 
 thesysname = "You are Flexi💻AI."
@@ -19,42 +10,6 @@ DEFAULT_PROMPT_FILE = "flexi.txt"
 DEFAULT_PROMPT_CONTENT = f"{thesysname}. You think step by step, keeping key points in mind to solve or answer the request."
 MD_HEADING = "#"
 TRIPLE_BACKTICKS = "```"
-
-
-def execute_bash_command(command: any) -> str:
-    """
-    Execute a bash command and return its output as a string.
-    """
-    try:
-        if isinstance(command, dict):
-            if 'command' in command:
-                run_command = command['command'].split()
-            elif 'bash_command' in command:
-                run_command = command['bash_command'].split()
-            else:
-                raise ValueError(
-                    "Command dictionary is missing a required key.")
-        elif isinstance(command, list):
-            if len(command) == 1 and ' ' in command[0]:
-                run_command = command[0].split()
-            else:
-                run_command = command
-        elif isinstance(command, str):
-            run_command = command.split()
-        else:
-            raise ValueError("Unsupported command format.")
-        process = subprocess.Popen(
-            run_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        output, error = process.communicate()
-        if process.returncode != 0:
-            raise Exception(
-                f"Command failed with exit code {process.returncode}, error: {error.decode('utf-8')}")
-        return output.decode('utf-8')
-    except Exception as e:
-        logging.error(f"Error in bash command: {e}")
-        return ""
-
-# (Other parts of the file remain unchanged.)
 
 
 def add_context_to_messages(messages: List[Dict[str, str]], summary: str) -> List[Dict[str, str]]:
@@ -69,6 +24,11 @@ def add_context_to_messages(messages: List[Dict[str, str]], summary: str) -> Lis
 
 
 def load_message_template(sys_type: str = 'base', summary: str = '') -> List[Dict[str, str]]:
+    sys_type = sys_type.lower()
+    tool_docs = get_tool_docs()
+    tool_names = list(tool_docs.keys())
+    tool_documentation = [f"{name}: {doc}" for name, doc in tool_docs.items()]
+
     sys_type = sys_type.lower()
     if sys_type == "base":
         content = f"""
@@ -93,10 +53,9 @@ def load_message_template(sys_type: str = 'base', summary: str = '') -> List[Dic
     {{"use": "python"}}
     {TRIPLE_BACKTICKS}
 {MD_HEADING} Available Tools:
-{MD_HEADING} Names:
-[{", ".join(tool_registry.keys())}]
-{MD_HEADING} Documentation:
-[{", ".join([(tool_registry[tool].__doc__ or "").strip() for tool in tool_registry.keys()])}]
+- Names: {", ".join(tool_names)}
+- Documentation:
+{chr(10).join(tool_documentation)}
 """
         message = [{'role': 'system', 'content': content.strip()}]
     elif sys_type == "answer":
@@ -120,8 +79,9 @@ def load_message_template(sys_type: str = 'base', summary: str = '') -> List[Dic
 2) If a tool is needed, output a JSON instruction (wrapped in triple backticks).
 3) If execution fails, adjust parameters and try again.
 {MD_HEADING} Available Tools:
-Names: [{", ".join(tool_registry.keys())}]
-Documentation: [{", ".join([(tool_registry[tool].__doc__ or "").strip() for tool in tool_registry.keys()])}]
+- Names: {", ".join(tool_names)}
+- Documentation:
+{chr(10).join(tool_documentation)}
 {MD_HEADING} Usage:
 - Output a JSON response wrapped in triple backticks.
 - Include the tool name and parameters.

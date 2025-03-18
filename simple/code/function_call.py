@@ -3,44 +3,39 @@ import subprocess
 import os
 import logging
 
-# Removed: from simple.code.tool_registry import tool_registry
 
-
-def execute_tool(instruction: dict) -> dict:
+def execute_bash_command(command: any) -> str:
     """
-    Execute a named tool with the provided parameters.
+    Execute a bash command and return its output as a string.
     """
-    result = {"status": "", "message": ""}
-    tool_name = instruction.get('tool')
-    if not tool_name:
-        logging.error("No tool specified in the instruction.")
-        result['status'] = "500"
-        result['message'] = "Error: No tool specified."
-        return result
-
-    # Import tool_registry locally to avoid circular dependency
-    from simple.code.tool_registry import tool_registry
-
-    tool_func = tool_registry.get(tool_name)
-    if not tool_func:
-        logging.error(f"Tool {tool_name} not found in registry.")
-        result['status'] = "500"
-        result['message'] = f"Error: Tool {tool_name} not found."
-        return result
-
-    params = instruction.get('parameters')
     try:
-        logging.info(f"Executing tool: {tool_name} with parameters: {params}")
-        output = tool_func(params)
-        if output is None:
-            raise Exception("Tool returned None (possibly an error).")
-        result['status'] = "200"
-        result['message'] = f"Execution successful\nResult:\n{output}"
+        if isinstance(command, dict):
+            if 'command' in command:
+                run_command = command['command'].split()
+            elif 'bash_command' in command:
+                run_command = command['bash_command'].split()
+            else:
+                raise ValueError(
+                    "Command dictionary is missing a required key.")
+        elif isinstance(command, list):
+            if len(command) == 1 and ' ' in command[0]:
+                run_command = command[0].split()
+            else:
+                run_command = command
+        elif isinstance(command, str):
+            run_command = command.split()
+        else:
+            raise ValueError("Unsupported command format.")
+        process = subprocess.Popen(
+            run_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output, error = process.communicate()
+        if process.returncode != 0:
+            raise Exception(
+                f"Command failed with exit code {process.returncode}, error: {error.decode('utf-8')}")
+        return output.decode('utf-8')
     except Exception as e:
-        logging.error(f"Error executing tool {tool_name}: {e}")
-        result['status'] = "500"
-        result['message'] = f"Execution failed:\n{str(e)}"
-    return result
+        logging.error(f"Error in bash command: {e}")
+        return ""
 
 
 def write_custom_python_file(file_path: str, code: str) -> None:
