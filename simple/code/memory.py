@@ -4,6 +4,7 @@ import requests
 from tqdm import tqdm
 import chromadb
 import json
+from simple.code.inference import run_inference
 from simple.code.logging_config import setup_logging
 
 # Centralized logging setup
@@ -28,8 +29,10 @@ def embedText(writtenText, model='nomic-embed-text'):
             "http://localhost:11434/api/embeddings",
             headers={"Content-Type": "application/json"},
             data=json.dumps(payload),
-            stream=True
+            stream=True,
+            timeout=1000  # Added timeout for network requests
         )
+        decoded_list = None
         for line in request_response.iter_lines():
             if line:
                 decoded_line = line.decode('utf-8')
@@ -58,15 +61,15 @@ def classify_embedding(query, context):
     ]
     classify_convo.append(
         {'role': "user", 'content': f'SEARCH QUERY: {query} \n\nEMBEDDED CONTEXT: {context} '})
-    response = run_inference(classify_convo, None, None, "default-model")
+    response = run_inference(classify_convo, None, None, "llama3.2")
     return response.strip().strip().lower()
 
 
-def retrieve_embeddings(queries, n_results=2):
+def retrieve_embeddings(queries, db='conversations', n_results=2):
     embeddings = set()
     for query in tqdm(queries, desc='Retrieving Embeddings'):
         response = embedText(query)
-        vector_db = get_or_create_collection('conversations')
+        vector_db = get_or_create_collection(db)
         results = vector_db.query(
             query_embeddings=[response], n_results=n_results)
         best_embeddings = results[0]
@@ -93,7 +96,7 @@ def create_queries(prompt):
             'content': '["Llama3 voice assistant", "Python voice assistant", "OpenAI TTS", "openai speak"]'},
     ]
     query_convo.append({'role': "user", 'content': prompt})
-    response = run_inference(query_convo, None, None, "default-model")
+    response = run_inference(query_convo, None, None, "llama3.2")
     try:
         return ast.literal_eval(response)
     except Exception as e:
@@ -120,7 +123,7 @@ def example_usage(user_input):
     embeddings = retrieve_embeddings(queries)
     prompt = f'MEMORIES: {embeddings}\n\nUSER PROMPT: {user_input}'
     response = run_inference(
-        [{'role': "user", 'content': prompt}], None, None, "default-model")
+        [{'role': "user", 'content': prompt}], None, None, "llama3.2")
     return True
 
 

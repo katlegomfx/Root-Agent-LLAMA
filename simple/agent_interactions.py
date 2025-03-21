@@ -1,3 +1,7 @@
+# Goal is to show the agents user and assistant interations by means of a character (agent) going and using python or to the tool box and choosing a tool
+# getting the output and using it to give a final answer
+
+
 import tkinter as tk
 import threading
 import pygame

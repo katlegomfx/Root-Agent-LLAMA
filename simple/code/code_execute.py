@@ -1,6 +1,7 @@
 import tempfile
 import subprocess
 import os
+import sys
 import logging
 
 
@@ -19,7 +20,7 @@ def execute_python_code(code: str) -> dict:
             temp_file.write(code)
             temp_filename = temp_file.name
         process = subprocess.Popen(
-            ["python", temp_filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            [sys.executable, temp_filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
         if process.returncode != 0:
             result['status'] = "500"

@@ -2,6 +2,7 @@ import tempfile
 import subprocess
 import os
 import logging
+import shlex
 
 
 def execute_bash_command(command: any) -> str:
@@ -11,19 +12,19 @@ def execute_bash_command(command: any) -> str:
     try:
         if isinstance(command, dict):
             if 'command' in command:
-                run_command = command['command'].split()
+                run_command = shlex.split(command['command'])
             elif 'bash_command' in command:
-                run_command = command['bash_command'].split()
+                run_command = shlex.split(command['bash_command'])
             else:
                 raise ValueError(
                     "Command dictionary is missing a required key.")
         elif isinstance(command, list):
             if len(command) == 1 and ' ' in command[0]:
-                run_command = command[0].split()
+                run_command = shlex.split(command[0])
             else:
                 run_command = command
         elif isinstance(command, str):
-            run_command = command.split()
+            run_command = shlex.split(command)
         else:
             raise ValueError("Unsupported command format.")
         process = subprocess.Popen(

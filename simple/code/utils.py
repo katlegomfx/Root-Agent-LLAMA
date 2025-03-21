@@ -84,7 +84,12 @@ def extract_json_block(text: str) -> dict:
     Raises:
         ValueError: If no valid JSON block is found.
     """
-    pattern = r"```json\s*\n(.*?)```"
+    try:
+        language = "json"
+        pattern = rf"```(?:\n\s*)*{re.escape(language)}\s*\n(.*?)```"
+    except Exception as e:
+        language = ""
+        pattern = rf"```(?:\n\s*)*{re.escape(language)}\s*\n(.*?)```"
     matches = re.findall(pattern, text, re.DOTALL)
     if not matches:
         raise ValueError("No JSON block found in the text.")

@@ -1,3 +1,7 @@
+#!/usr/bin/env python3
+"""
+Creates an artistic PNG image from data using matplotlib.
+"""
 import matplotlib.pyplot as plt
 import numpy as np
 import os
