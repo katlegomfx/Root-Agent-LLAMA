@@ -77,6 +77,6 @@ video/gui_vv_gen.py
 Modelfile
 system_prompts/flexi.txt
 history/vibe.json
-testIt copy.py
+testIt *.py
 testIt.py
 testIt.py

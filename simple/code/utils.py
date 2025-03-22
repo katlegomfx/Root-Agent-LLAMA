@@ -1,13 +1,14 @@
+import json
 import os
 import re
 import sys
-import json
 from typing import List
 from colorama import Fore, Style
 from simple.code.system_prompts import MD_HEADING
 
 # Pattern to remove model artifacts (e.g., '←[0m')
 ESC_LIKE_PATTERN = re.compile(r'(?:←)?\[\d+m')
+# Check if the output supports color.
 USE_COLOR = sys.stdout.isatty()
 
 

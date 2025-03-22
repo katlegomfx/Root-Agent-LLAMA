@@ -4,6 +4,8 @@ import os
 import sys
 import logging
 
+from simple.agent_interactions import move_to_tool_dynamic
+
 
 def execute_python_code(code: str) -> dict:
     """
@@ -19,17 +21,18 @@ def execute_python_code(code: str) -> dict:
         with tempfile.NamedTemporaryFile("w", delete=False, suffix=".py") as temp_file:
             temp_file.write(code)
             temp_filename = temp_file.name
-        process = subprocess.Popen(
-            [sys.executable, temp_filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate()
-        if process.returncode != 0:
+        completed = subprocess.run(
+            [sys.executable, temp_filename],
+            capture_output=True,
+            text=True
+        )
+        if completed.returncode != 0:
             result['status'] = "500"
-            result[
-                'message'] = f"Execution failed with exit code {process.returncode}:\n{stderr.decode('utf-8')}"
+            result['message'] = f"Execution failed with exit code {completed.returncode}:\n{completed.stderr}"
         else:
             result['status'] = "200"
             result['message'] = "Execution successful\nResult:\n" + \
-                stdout.decode('utf-8')
+                completed.stdout
     except Exception as e:
         result['status'] = "500"
         result['message'] = f"Execution failed:\n{str(e)}"
@@ -57,12 +60,13 @@ def execute_tool(instruction: dict) -> dict:
     from simple.code.tool_registry import tool_registry
 
     tool_func = tool_registry.get(tool_name)
+
     if not tool_func:
         logging.error(f"Tool {tool_name} not found in registry.")
         result['status'] = "500"
         result['message'] = f"Error: Tool {tool_name} not found."
         return result
-
+    move_to_tool_dynamic(tool_name)
     params = instruction.get('parameters')
     try:
         logging.info(f"Executing tool: {tool_name} with parameters: {params}")

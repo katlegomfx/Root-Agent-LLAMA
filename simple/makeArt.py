@@ -2,15 +2,15 @@
 """
 Creates an artistic PNG image from data using matplotlib.
 """
-import matplotlib.pyplot as plt
-import numpy as np
+
+import matplotlib.pyplot as plt # type: ignore
+import numpy as np # type: ignore
 import os
 import logging
 from typing import List
 from simple.code.utils import colored_print, strip_model_escapes, Fore
 from simple.code.logging_config import setup_logging
 
-# Centralized logging setup
 setup_logging()
 
 
@@ -54,8 +54,8 @@ def create_artistic_png(data: List[float], filename: str = "gag/artistic_plot.pn
     ax.set_ylabel("Value", fontsize=14)
 
     for i, value in enumerate(data):
-        ax.annotate(f'{value}', xy=(i, value), xytext=(5, 5),
-                    textcoords='offset points', fontsize=10, color='darkred')
+        ax.annotate(f'{value}', xy=(i, value), xytext=(5, 5), textcoords='offset points',
+                    fontsize=10, color='darkred')
 
     try:
         plt.savefig(filename, format="png", dpi=300, bbox_inches='tight')
@@ -69,5 +69,4 @@ def create_artistic_png(data: List[float], filename: str = "gag/artistic_plot.pn
 if __name__ == "__main__":
     example_data = [1, 3, 2, 5, 7, 8, 6]
     create_artistic_png(example_data)
-    colored_print(
-        "Artistic PNG image created as 'gag/artistic_plot.png'.", Fore.BLUE)
+    print("Artistic PNG image created as 'gag/artistic_plot.png'.")

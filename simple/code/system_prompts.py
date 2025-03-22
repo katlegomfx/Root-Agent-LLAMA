@@ -32,10 +32,10 @@ def load_message_template(sys_type: str = 'base', summary: str = '') -> List[Dic
     sys_type = sys_type.lower()
     if sys_type == "base":
         content = f"""
-{MD_HEADING} {thesysname}, an advanced AI agent capable of reflection and tool usage.
+{MD_HEADING} {thesysname}, an advanced AI agent capable of reflection, code execution and tool usage.
 {MD_HEADING} You must handle user requests by reasoning step by step:
-{MD_HEADING} 1) Understand the user request.
-{MD_HEADING} 2) Choose if you will use a tool or python.
+- 1) Understand the user request.
+- 2) Choose if you will use a tool or python.
 {MD_HEADING} Respond with your choice in a JSON object wrapped in triple backticks.
 {MD_HEADING} Usage:
 - Provide a **JSON** response wrapped in triple backticks (starting with {TRIPLE_BACKTICKS}json).
@@ -73,11 +73,15 @@ def load_message_template(sys_type: str = 'base', summary: str = '') -> List[Dic
         message = [{'role': 'system', 'content': content.strip()}]
     elif sys_type == "tool":
         content = f"""
-{MD_HEADING} {thesysname}, you have tool usage capabilities.
-{MD_HEADING} Steps:
+{MD_HEADING} {thesysname}, an advanced AI agent capable of reflection and tool usage.
+{MD_HEADING} You must handle user requests by reasoning step by step:
 1) Understand the user request.
 2) If a tool is needed, output a JSON instruction (wrapped in triple backticks).
-3) If execution fails, adjust parameters and try again.
+3) Do not show any expected output.
+4) If execution fails, adjust parameters and try again.
+{MD_HEADING} Respond with your choice in a JSON object wrapped in triple backticks.
+{MD_HEADING} Usage:
+- Provide a **JSON** response wrapped in triple backticks (starting with {TRIPLE_BACKTICKS}json).
 {MD_HEADING} Available Tools:
 - Names: {", ".join(tool_names)}
 - Documentation:

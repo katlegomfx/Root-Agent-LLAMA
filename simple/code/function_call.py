@@ -3,21 +3,20 @@ import subprocess
 import os
 import logging
 import shlex
+from typing import Any
 
 
-def execute_bash_command(command: any) -> str:
+def execute_bash_command(command: Any) -> str:
     """
     Execute a bash command and return its output as a string.
     """
     try:
         if isinstance(command, dict):
-            if 'command' in command:
-                run_command = shlex.split(command['command'])
-            elif 'bash_command' in command:
-                run_command = shlex.split(command['bash_command'])
-            else:
+            cmd_str = command.get('command') or command.get('bash_command')
+            if not cmd_str:
                 raise ValueError(
                     "Command dictionary is missing a required key.")
+            run_command = shlex.split(cmd_str)
         elif isinstance(command, list):
             if len(command) == 1 and ' ' in command[0]:
                 run_command = shlex.split(command[0])
@@ -27,13 +26,11 @@ def execute_bash_command(command: any) -> str:
             run_command = shlex.split(command)
         else:
             raise ValueError("Unsupported command format.")
-        process = subprocess.Popen(
-            run_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        output, error = process.communicate()
-        if process.returncode != 0:
+        completed = subprocess.run(run_command, capture_output=True, text=True)
+        if completed.returncode != 0:
             raise Exception(
-                f"Command failed with exit code {process.returncode}, error: {error.decode('utf-8')}")
-        return output.decode('utf-8')
+                f"Command failed with exit code {completed.returncode}, error: {completed.stderr}")
+        return completed.stdout
     except Exception as e:
         logging.error(f"Error in bash command: {e}")
         return ""
@@ -52,7 +49,6 @@ def write_custom_python_file(file_path: str, code: str) -> None:
 
 
 if __name__ == "__main__":
-    # Example usage:
     file_path = "example.py"  # File will be created as simple/code/custom/example.py
     code = (
         "def hello_world():\n"

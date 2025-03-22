@@ -31,21 +31,33 @@ class InferenceClient:
         full_text = ""
 
         def append_text(s: str) -> None:
-            widget.insert("end", s)
-            widget.see("end")
+            if widget is not None:
+                widget.insert("end", s)
+                widget.see("end")
 
-        root.after(0, append_text, "\n")
+        # Use root.after if available; otherwise, print to console.
+        if widget is not None and root is not None:
+            root.after(0, append_text, "\n")
+        else:
+            print("\n", end='')
+
         logging.info("Starting inference chat...")
         async for part in response_generator:
             if self.cancelled:
                 logging.info("Inference cancelled.")
-                root.after(0, append_text, "\n[Inference cancelled]")
+                if widget is not None and root is not None:
+                    root.after(0, append_text, "\n[Inference cancelled]")
+                else:
+                    print("\n[Inference cancelled]")
                 break
             section = part.get("message", {}).get("content", "")
             clean_section = strip_model_escapes(section)
             full_text += clean_section
-            colored_print(clean_section, Fore.YELLOW, end='', flush=True)
-            root.after(0, append_text, clean_section)
+            print(clean_section, end='', flush=True)
+            if widget is not None and root is not None:
+                root.after(0, append_text, clean_section)
+            else:
+                pass
         print()
         logging.info("Inference completed.")
         return full_text
