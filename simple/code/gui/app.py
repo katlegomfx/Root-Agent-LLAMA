@@ -1,15 +1,3 @@
-# Agentic System
-
-# Process
-# - Agentic System capable for running tools and executing code
-# - the system should decide if it should get information from the vector database
-# - the tool or code should get executed
-
-# GUI
-# - input text area for user to enter what they would like to do
-# - text area scratchpad for run inference to show each step taken
-# - the agent should work on the task in the scratchpad continuously until the retries run out or the task is complete
-# - the final response should be written to the output area
 #!/usr/bin/env python3
 """
 GUI Application for Flexi💻AI
@@ -25,13 +13,14 @@ import threading
 import asyncio
 import json
 import logging
+import random
 from typing import Any
 
 from simple.code import utils
 from simple.code.utils import colored_print, Fore
 from simple.code.logging_config import setup_logging
 from simple.code.agent_executor import AgentExecutor
-from simple.code.system_prompts import MD_HEADING
+from simple.code.system_prompts import MD_HEADING, load_message_template
 from simple import agent_interactions
 
 setup_logging()
@@ -47,11 +36,15 @@ class FlexiAgentApp:
         self.history_index = None  # Pointer for cycling through input history
         self.model_var = tk.StringVar(value="llama3.2")
         self.full_prompt = ""
+        self.auto_prompt_set = False  # Flag to avoid multiple auto-fills
+        self.first_check = False
 
         # Instantiate the agent executor
         self.agent_executor = AgentExecutor(model_name=self.model_var.get())
 
         self.build_gui()
+        # Start periodic input check (every 60 seconds)
+        self.check_input()
         # Bind the Up arrow to recall previous input when input area is focused
         self.input_text_area.bind("<Up>", self.on_up_key)
         # Optionally, you could add a Down arrow binding to cycle forward:
@@ -136,7 +129,7 @@ class FlexiAgentApp:
         self.user_history.pack(fill=tk.BOTH, expand=True)
 
     def update_interaction_output(self, role: str, content: str) -> None:
-        formatted_text = f"Role: {role}\nContent: {content}\n{'-'*40}\n"
+        formatted_text = f"Role: {role}\nContent:\n{content}\n{'-'*40}\n"
         self.interaction_output_area.config(state=tk.NORMAL)
         self.interaction_output_area.insert(tk.END, formatted_text)
         self.interaction_output_area.see(tk.END)
@@ -172,8 +165,16 @@ class FlexiAgentApp:
         user_input = self.input_text_area.get("1.0", "end-1c")
         if not user_input.strip():
             return
-        self.update_interaction_output("User", user_input)
+        # Build the full prompt from user input and any extra context
         self.full_prompt = self.build_full_prompt(user_input)
+        # Load the system message from load_message_template (base type)
+        system_msgs = load_message_template('base', '')
+        system_text = "\n".join([msg["content"] for msg in system_msgs])
+        full_input_text = system_text + "\n" + self.full_prompt
+        # Show the full input (system message + user request) in the interaction output
+        self.update_interaction_output("Full Input", full_input_text)
+        # Also show the user's raw input
+        self.update_interaction_output("User", user_input)
         self.agent_executor.full_prompt = self.full_prompt
         self.submit_button.config(state=tk.DISABLED)
         self.text_prompt = {'role': 'user', 'content': self.full_prompt}
@@ -184,14 +185,15 @@ class FlexiAgentApp:
         self.history_index = None
         self.run_async_in_thread(
             self.agent_executor.decide_execution(
-                self.text_prompt, self.output_text_area, self.agent_scratchpad_text_area, self.root, self.full_prompt),
+                self.text_prompt, self.output_text_area, self.agent_scratchpad_text_area, self.root, self.full_prompt
+            ),
             self.handle_response
         )
+        self.auto_prompt_set = False  # Reset auto-fill flag upon submission
 
     def handle_response(self, response: str) -> None:
         self.text_prompt = [self.text_prompt, {
             'role': 'assistant', 'content': response}]
-        # self.output_text_area.insert(tk.END, "\n" + response)
         self.update_interaction_output("Assistant", response)
         self.submit_button.config(state=tk.NORMAL)
 
@@ -226,28 +228,60 @@ class FlexiAgentApp:
         """Handler for the Up arrow key to recall previous input."""
         if not self.text_history:
             return "break"
-        # If history_index is None, start at the last item
         if self.history_index is None:
             self.history_index = len(self.text_history) - 1
         else:
-            # Move to the previous history entry if available
             if self.history_index > 0:
                 self.history_index -= 1
-        # Replace the input area with the selected history entry
         self.input_text_area.delete("1.0", tk.END)
         self.input_text_area.insert(
             "end", self.text_history[self.history_index])
         return "break"
 
-    # Optionally, add a down arrow handler to navigate forward in history:
-    # def on_down_key(self, event) -> str:
-    #     if not self.text_history or self.history_index is None:
-    #         return "break"
-    #     if self.history_index < len(self.text_history) - 1:
-    #         self.history_index += 1
-    #         self.input_text_area.delete("1.0", tk.END)
-    #         self.input_text_area.insert("end", self.text_history[self.history_index])
-    #     return "break"
+    def check_input(self) -> None:
+        """
+        Checks every 60 seconds if the user has entered any text in the input area.
+        If no input is present and no auto-prompt has been set, update the prompt to a random one and schedule submission.
+        """
+        current_input = self.input_text_area.get("1.0", "end-1c").strip()
+        if not current_input and not self.auto_prompt_set:
+            if self.first_check:
+                logging.info(
+                    "No input detected. Auto-filling prompt in 60 seconds.")
+                self.auto_fill_and_submit_prompt()
+            else:
+                self.first_check = True
+        else:
+            logging.info("User input detected.")
+        # Schedule the next check in 60 seconds (60000 milliseconds)
+        self.root.after(60000, self.check_input)
+
+    def auto_fill_and_submit_prompt(self) -> None:
+        """
+        Updates the input area with a random prompt from a list of 12 prompts
+        focused on improving the codebase, then waits 60 seconds and submits it.
+        """
+        prompts = [
+            "Refactor the agent_interactions module to reduce code duplication.",
+            "Improve error handling in the tool execution functions.",
+            "Enhance the logging configuration for better debugging output.",
+            "Modularize the code execution logic to separate concerns.",
+            "Optimize the Tkinter GUI layout for responsiveness.",
+            "Streamline the agent_executor logic to simplify JSON extraction.",
+            "Add unit tests for the tool registry and custom tools.",
+            "Improve code documentation and inline comments throughout the codebase.",
+            "Refactor the code to use more efficient data structures where possible.",
+            "Consolidate repeated functionality in the GUI helper methods.",
+            "Implement a more robust mechanism for asynchronous code execution.",
+            "Review and optimize the performance of the inference client."
+        ]
+        prompt = random.choice(prompts)
+        self.input_text_area.delete("1.0", tk.END)
+        self.input_text_area.insert(tk.END, prompt)
+        logging.info(f"Auto-filled prompt: {prompt}")
+        self.auto_prompt_set = True
+        # Schedule auto-submission in 60 seconds (60000 milliseconds)
+        self.root.after(60000, self.submit_text)
 
 
 def main() -> None:

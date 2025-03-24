@@ -8,7 +8,7 @@ and then triggers the corresponding window.
 
 import tkinter as tk
 import threading
-import pygame # type: ignore
+import pygame  # type: ignore
 import sys
 import io
 import contextlib
@@ -23,6 +23,9 @@ tk_root: Optional[tk.Tk] = None  # Tkinter root reference
 selected_tool: Optional[str] = None
 tool_info_shown: bool = False  # Whether tool info has been shown
 status_msg: str = ""  # Global status message shown in pygame
+
+# New global variable to hold generated Python code for display in pygame
+generated_python_code: str = ""
 
 DEFAULT_CODE: str = """def hello_world():
     print("Hello, World!")
@@ -52,6 +55,12 @@ def update_status_msg(msg: str) -> None:
     """Update the global status message that is drawn on the pygame screen."""
     global status_msg
     status_msg = msg
+
+
+def set_generated_code(code: str) -> None:
+    """Helper to update the generated Python code that will be shown in pygame."""
+    global generated_python_code
+    generated_python_code = code
 
 
 def launch_game() -> None:
@@ -172,7 +181,6 @@ def run_game() -> None:
                 label = font.render(tool_name, True, (255, 255, 255))
                 screen.blit(
                     label, (pos[0] + (50 - label.get_width()) // 2, pos[1] - label.get_height() - 5))
-            # Show tool information when the agent reaches the selected tool
             if selected_tool is not None and desired_position is None and not tool_info_shown:
                 tools = list(tool_registry.keys())
                 index = tools.index(selected_tool)
@@ -184,9 +192,18 @@ def run_game() -> None:
         elif mode == "python_code":
             header = font.render("Python Code Mode", True, (255, 255, 255))
             screen.blit(header, (220, 20))
-            prompt = font.render(
-                "Executing default code...", True, (255, 255, 255))
-            screen.blit(prompt, (200, 60))
+            if generated_python_code:
+                # Split the generated code into lines and display each line
+                lines = generated_python_code.splitlines()
+                y_offset = 60
+                for line in lines:
+                    code_surface = font.render(line, True, (200, 200, 200))
+                    screen.blit(code_surface, (50, y_offset))
+                    y_offset += font.get_linesize()
+            else:
+                prompt = font.render(
+                    "Executing default code...", True, (255, 255, 255))
+                screen.blit(prompt, (200, 60))
 
         # Draw agent
         agent_rect = pygame.Rect(agent_x, agent_y, 50, 50)
@@ -195,7 +212,6 @@ def run_game() -> None:
         screen.blit(agent_label, (agent_x + (50 - agent_label.get_width()) // 2,
                                   agent_y - agent_label.get_height() - 5))
 
-        # Draw status message at the bottom
         if status_msg:
             status_surface = font.render(
                 str(status_msg), True, (255, 255, 255))
