@@ -1,6 +1,7 @@
 # Bot\build\code\llm\prompts.py
 import os
 import json
+from pathlib import Path
 import shutil
 from datetime import datetime
 from typing import List, Dict, Any
@@ -532,6 +533,58 @@ def read_file_content(path: str) -> str:
             return "".join(open(path, 'r', encoding='utf-8')).replace('# ', '## ')
     except Exception as e:
         colored_print(e, Fore.RED)
+
+
+def get_ts_files_content(directory):
+    """
+    Recursively searches for all .ts and .tsx files in the specified directory and its subdirectories,
+    excluding those in any 'node_modules' directory. Only files that are located in a folder named 'src'
+    are processed, unless the root directory itself is 'src'.
+
+    Returns a dictionary mapping each file's path to its content.
+    """
+    ts_files_content = {}
+    root = Path(directory).resolve()
+    is_root_src = (root.name == "src")
+
+    # Iterate over all files recursively
+    for file in root.rglob("*"):
+        if file.suffix not in (".ts", ".tsx"):
+            continue
+        if "node_modules" in file.parts:
+            continue
+
+        # If the root isn't named 'src', only process files that lie in a 'src' folder
+        if not is_root_src:
+            try:
+                relative_parts = file.relative_to(root).parts
+            except ValueError:
+                continue
+            if "src" not in relative_parts:
+                continue
+
+        try:
+            content = file.read_text(encoding="utf-8")
+            new_file = file.as_posix().replace(
+                'C:/Users/katle/Desktop/theFlex/lastLast/app/', '')
+            ts_files_content[str(new_file)] = content
+        except Exception as e:
+            print(f"Error reading {new_file}: {e}")
+
+    return ts_files_content
+
+
+def convert_to_md(ts_files):
+    """
+    Converts the dictionary of TypeScript files to a Markdown-formatted string.
+    Each file's content is enclosed in triple backticks with language identifier.
+    """
+    md_content = ""
+    for filepath, content in ts_files.items():
+        md_content += f"### {filepath}\n\n```ts\n{content}\n```\n\n"
+    return md_content
+
+
 
 def add_context_to_messages(messages, context):
     for m in messages:

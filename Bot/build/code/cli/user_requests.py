@@ -12,7 +12,7 @@ from Bot.build.code.cli.next.info.line_cleaner import process_directory
 from Bot.build.code.llm.workflows import code_use, tool_use
 from Bot.build.code.session.constants import (
     ai_errors_path, error_file, gen_ai_path, tips)
-from Bot.build.code.llm.prompts import load_message_template, code_corpus, read_file_content
+from Bot.build.code.llm.prompts import convert_to_md, get_ts_files_content, load_message_template, code_corpus, read_file_content
 from Bot.build.code.io_utils import write_content_to_file
 
 class UserRequests:
@@ -300,12 +300,23 @@ class UserRequests:
         write_content_to_file(prompt, './prompts/gen/video_prompt.md')
 
     async def process_simple_request(self, user_input: str, tries=0):
+
+
+        directory1 = "./app/base"
+        ts_files_1 = convert_to_md(get_ts_files_content(directory1))
+
+        directory2 = "./app/appgen"
+        ts_files_2 = convert_to_md(get_ts_files_content(directory2))
+
+
+
+
         base_code = "".join(code_corpus('./simple'))
         user_request = user_input.replace('simple ', '')
         if len(user_request) >= 3:
             final_request = f"\n\n# {user_request}"
-            prompt = f'# Considering the following:\n\n{
-                base_code}{final_request}\n\n{tips}'
+            prompt = f'''# Considering the following:\n\n{
+                base_code}{final_request}\n\n{tips}'''
         else:
             prompt = f'# Considering the following:\n\n{
                 base_code}'

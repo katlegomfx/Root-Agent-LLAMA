@@ -80,3 +80,11 @@ history/vibe.json
 testIt *.py
 testIt.py
 testIt.py
+
+pretrained
+simple/app/*
+simple/gag/*
+imagev1/*
+
+chat_gui.py
+testIt.py
