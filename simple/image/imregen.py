@@ -17,14 +17,14 @@ pipe = StableDiffusionImg2ImgPipeline.from_pretrained(
 
 path_loc = "simple/gag/generated_image.png"
 # Load the image, convert to RGB, then to a numpy array
-init_image = Image.open(path_loc).convert("RGB")
-init_image_np = np.array(init_image)
+init_image = Image.Image(path_loc).convert("RGB")
+# init_image_np = np.array(init_image)
 
 
 # Open the image using PIL
-torch_tensor = Image.open(path_loc)
+# torch_tensor = Image.open(path_loc)
 print("Type after opening with PIL:", type(
-    torch_tensor))  # <class 'PIL.Image.Image'>
+    init_image))  # <class 'PIL.Image.Image'>
 
 # # Convert the PIL image to a NumPy array
 # torch_tensor = np.array(pil_image)
@@ -37,15 +37,11 @@ print("Type after opening with PIL:", type(
 #     torch_tensor), torch_tensor.shape)  # <class 'torch.Tensor'>
 
 
-
-
-
-
 # Define your prompt
 prompt = "A futuristic cityscape at sunset with vibrant neon lights"
 
 # Generate the new image
-result = pipe(prompt=prompt, init_image=torch_tensor).images[0]
+result = pipe(prompt=prompt, init_image=init_image).images[0]
 
 # Save and display the resulting image
 result.save("img2img_result.png")

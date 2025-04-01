@@ -301,15 +301,11 @@ class UserRequests:
 
     async def process_simple_request(self, user_input: str, tries=0):
 
-
         directory1 = "./app/base"
         ts_files_1 = convert_to_md(get_ts_files_content(directory1))
 
         directory2 = "./app/appgen"
         ts_files_2 = convert_to_md(get_ts_files_content(directory2))
-
-
-
 
         base_code = "".join(code_corpus('./simple'))
         user_request = user_input.replace('simple ', '')
@@ -322,6 +318,26 @@ class UserRequests:
                 base_code}'
 
         write_content_to_file(prompt, './prompts/gen/simple_prompt.md')
+
+        # code_messages = self.messages_context + load_message_template(
+        #     sys_type='python', summary=self.summary)
+        # code_messages.append({'role': 'user', 'content': prompt})
+
+        # response = await self.send_and_store_message(code_messages)
+
+    async def process_website_request(self, user_input: str, tries=0):
+
+        base_code = "".join(code_corpus('./web/sites'))
+        user_request = user_input.replace('web ', '')
+        if len(user_request) >= 3:
+            final_request = f"\n\n# {user_request}"
+            prompt = f'''# Considering the following:\n\n{
+                base_code}{final_request}\n\n{tips}'''
+        else:
+            prompt = f'# Considering the following:\n\n{
+                base_code}'
+
+        write_content_to_file(prompt, './prompts/gen/web_prompt.md')
 
         # code_messages = self.messages_context + load_message_template(
         #     sys_type='python', summary=self.summary)

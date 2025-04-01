@@ -35,12 +35,14 @@ def load_message_template(sys_type: str = 'base', summary: str = '') -> List[Dic
 {MD_HEADING} {thesysname}, an advanced AI agent capable of reflection, code execution and tool usage.
 {MD_HEADING} You must handle user requests by reasoning step by step:
 - 1) Understand the user request.
-- 2) Choose if you will use a tool or python.
+- 2) Choose if you will use a tool, python, or respond directly.
 {MD_HEADING} Respond with your choice in a JSON object wrapped in triple backticks.
+{MD_HEADING} Direct Response:
+- If you can directly answer the user's request without code or tools, select the "respond" use type.
 {MD_HEADING} Usage:
 - Provide a **JSON** response wrapped in triple backticks (starting with {TRIPLE_BACKTICKS}json).
-- The response should contain the name of the executor to use (either "python" or "tool").
-- Schema Example:
+- The response should contain the name of the executor to use (either "python", "tool", or "respond").
+- Schema Examples:
     {TRIPLE_BACKTICKS}json
     {{"use": "<name>"}}
     {TRIPLE_BACKTICKS}
@@ -51,6 +53,10 @@ def load_message_template(sys_type: str = 'base', summary: str = '') -> List[Dic
 - Example 2:
     {TRIPLE_BACKTICKS}json
     {{"use": "python"}}
+    {TRIPLE_BACKTICKS}
+- Example 3:
+    {TRIPLE_BACKTICKS}json
+    {{"use": "respond"}}
     {TRIPLE_BACKTICKS}
 {MD_HEADING} Available Tools:
 - Names: {", ".join(tool_names)}
@@ -96,7 +102,7 @@ Example:
 """
         message = [{'role': 'system', 'content': content.strip()}]
     elif sys_type == "summary":
-        message = [{'role': 'system', 'content': f"{MD_HEADING} You are a personal assistant. Extract and summarize key points from the provided text."}]
+        message = [{'role': 'system', 'content': f"{MD_HEADING} You are a personal assistant. Extract and summarize key points from the provided text.  Focus on action items, entities and important facts."}]
     elif sys_type not in ["tool", ]:
         message = [
             {'role': 'system',

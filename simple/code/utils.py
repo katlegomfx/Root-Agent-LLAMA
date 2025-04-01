@@ -2,7 +2,7 @@ import json
 import os
 import re
 import sys
-from typing import List
+from typing import Dict, List, Union
 from colorama import Fore, Style
 from simple.code.system_prompts import MD_HEADING
 
@@ -63,9 +63,9 @@ def code_corpus(directory: str) -> List[str]:
     """
     Builds a corpus by reading all Python files in the directory, excluding certain files and folders.
     """
-    exclude_files = ['craze.py', 'ibot.py', 'nextBuilderIntegration.py']
+    exclude_files = []
     exclude_dirs = ['interest', 'pyds', 'backup', 'models', 'sdlc',
-                    'self_autoCode', 'self_autoCodebase', 'tests', 'to_confirm_tools']
+                    'self_autoCode', 'self_autoCodebase', 'tests', 'to_confirm_tools', 'node_modules', '']
     file_paths = get_py_files_recursive(
         directory, exclude_dirs=exclude_dirs, exclude_files=exclude_files)
     corpus = []
@@ -78,26 +78,33 @@ def code_corpus(directory: str) -> List[str]:
     return corpus
 
 
-def extract_json_block(text: str) -> dict:
+def extract_json_block(text: str) -> Union[Dict, List, str]:
     """
-    Extracts and returns the first valid JSON object found within triple backticks labeled as json.
-    
+    Extracts and returns the first valid JSON object or array found in the text.
+    It searches for JSON blocks within triple backticks (with or without a language label)
+    and also attempts to parse the entire text as JSON if no backticks are found.
+
     Raises:
         ValueError: If no valid JSON block is found.
     """
-    try:
-        language = "json"
-        pattern = rf"```(?:\n\s*)*{re.escape(language)}\s*\n(.*?)```"
-    except Exception as e:
-        language = ""
-        pattern = rf"```(?:\n\s*)*{re.escape(language)}\s*\n(.*?)```"
+
+    # First, try to find JSON within triple backticks (with or without language label)
+    pattern = r"```(?:\w*\n)?(.*?)```"
     matches = re.findall(pattern, text, re.DOTALL)
-    if not matches:
-        raise ValueError("No JSON block found in the text.")
-    for block in matches:
-        try:
-            json_obj = json.loads(block.strip())
-            return json_obj
-        except json.JSONDecodeError:
-            continue
+
+    if matches:
+        for block in matches:
+            try:
+                json_obj = json.loads(block.strip())
+                return json_obj
+            except json.JSONDecodeError:
+                continue  # Try the next match if parsing fails
+
+    # If no JSON within backticks was found, attempt to parse the entire text as JSON
+    try:
+        json_obj = json.loads(text.strip())
+        return json_obj
+    except json.JSONDecodeError:
+        pass  # Parsing the entire text failed
+
     raise ValueError("No valid JSON block found in the text.")

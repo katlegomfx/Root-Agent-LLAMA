@@ -213,6 +213,8 @@ class CLIApplication(UserRequests, AIRequests, CLIRequests):
             elif user_input.startswith("simple"):
                 await self.process_simple_request(user_input)
 
+            elif user_input.startswith('web'):
+                await self.process_website_request(user_input)
       
             elif user_input.startswith("video"):
                 await self.process_video_request(user_input)

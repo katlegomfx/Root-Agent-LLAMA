@@ -16,7 +16,7 @@ def get_ts_files_content(directory):
 
     # Iterate over all files recursively
     for file in root.rglob("*"):
-        if file.suffix not in (".ts", ".tsx"):
+        if file.suffix not in (".ts", ".tsx", ".js", ".jsx"):
             continue
         if "node_modules" in file.parts:
             continue

@@ -10,7 +10,7 @@ setup_logging()
 
 
 class HistoryManager:
-    def __init__(self, history_dir: str = "gag/history") -> None:
+    def __init__(self, history_dir: str = "simple/gag/history") -> None:
         self.history_dir = history_dir
         os.makedirs(self.history_dir, exist_ok=True)
         self.current_file: Optional[str] = None

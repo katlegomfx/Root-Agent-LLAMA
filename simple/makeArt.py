@@ -14,7 +14,7 @@ from simple.code.logging_config import setup_logging
 setup_logging()
 
 
-def create_artistic_png(data: List[float], filename: str = "gag/artistic_plot.png", style: str = "seaborn-darkgrid") -> None:
+def create_artistic_png(data: List[float], filename: str = "simple/gag/artistic_plot.png", style: str = "seaborn-darkgrid") -> None:
     """
     Creates an artistic PNG image from the provided data using a specified style.
 
@@ -69,4 +69,4 @@ def create_artistic_png(data: List[float], filename: str = "gag/artistic_plot.pn
 if __name__ == "__main__":
     example_data = [1, 3, 2, 5, 7, 8, 6]
     create_artistic_png(example_data)
-    print("Artistic PNG image created as 'gag/artistic_plot.png'.")
+    print("Artistic PNG image created as 'simple/gag/artistic_plot.png'.")

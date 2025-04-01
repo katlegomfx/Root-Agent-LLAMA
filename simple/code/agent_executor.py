@@ -1,209 +1,473 @@
-#!/usr/bin/env python3
-"""
-Agent Execution Module
-
-This module contains the asynchronous logic for deciding how to handle user requests.
-It uses helper functions (e.g. code execution and tool usage) while staying independent
-of any GUI elements.
-"""
-
+# ./simple/code/agent_executor.py:
 import json
 import logging
 import re
-from typing import Any, List, Tuple, Union
+from typing import Any, List, Optional, Tuple, Dict, Union  # Added Dict, Union
 
-from simple.agent_interactions import move_to_python, move_to_tool, return_to_normal, update_status_msg, set_generated_code
+from simple.agent_interactions import AgentInteractionManager
 from simple.code.inference import run_inference
 from simple.code.system_prompts import MD_HEADING, load_message_template
 from simple.code.utils import extract_json_block, colored_print, Fore
 from simple.code.code_execute import execute_python_code, execute_tool
-from simple.code.logging_config import setup_logging
+# from simple.code.logging_config import setup_logging # Assuming configured elsewhere
 
-setup_logging()
+# setup_logging()
 
-MAX_RETRIES = 6  # Maximum number of retries for tool_use and code_use
+MAX_RETRIES = 3  # Reduced default retries to 3 for faster failure if stuck
+JSON_ERROR_HINT = "Invalid JSON. Provide a valid JSON object wrapped in triple backticks (```json ... ```)."
+USE_KEY_ERROR_HINT = "JSON requires a 'use' key with value 'python', 'tool', or 'respond'."
+CHECK_KEY_ERROR_HINT = "JSON requires a 'use' key with value 'yes' or 'no'."
 
 
 class AgentExecutor:
-    def __init__(self, model_name: str, messages_context: List[dict] = None) -> None:
+    def __init__(self, model_name: str, messages_context: List[dict] = None,
+                 agent_manager: AgentInteractionManager = None) -> None:
         self.model_name = model_name
         self.messages_context = messages_context if messages_context is not None else []
         self.summary: str = ""
         self.full_prompt: str = ""
+        # Use the provided agent_manager or create a new one
+        # Ensure AgentInteractionManager doesn't require Tkinter root at init
+        self.agent_manager = agent_manager if agent_manager is not None else AgentInteractionManager()
+        self.current_retries = 0  # Track retries per execution cycle
 
-    def _build_correction_prompt(self, base_prompt: List[dict], base_response: Any, hint: str) -> List[dict]:
+    def _build_correction_prompt(self, base_prompt: List[dict], bad_response: Any, hint: str) -> List[dict]:
+        """Appends the bad response and a correction hint to the prompt history."""
         prompt = base_prompt.copy()
-        prompt.append({'role': 'assistant', 'content': json.dumps(
-            base_response) if not isinstance(base_response, str) else base_response})
+        # Ensure assistant message is properly formatted (string, potentially JSON string)
+        assistant_content = json.dumps(bad_response) if not isinstance(
+            bad_response, str) else bad_response
+        prompt.append({'role': 'assistant', 'content': assistant_content})
         prompt.append({'role': 'user', 'content': hint})
+        logging.warning(f"Correction needed. Hint: {hint}")
         return prompt
 
-    async def _get_valid_json_response(self, base_prompt: List[dict], scratchpad_widget: Any, root: Any, error_hint: str) -> Tuple[dict, str, List[dict]]:
-        while True:
-            base_response = run_inference(
-                base_prompt, scratchpad_widget, root, self.model_name)
+    async def _get_valid_json_response(self, base_prompt: List[dict], scratchpad_widget: Any,
+                                       root: Any, error_hint: str, max_retries: int = MAX_RETRIES) -> Tuple[Optional[Union[Dict, List]], str, List[dict]]:
+        """Attempts to get a valid JSON response from the model, with retries."""
+        retries = 0
+        current_prompt = base_prompt
+        while retries < max_retries:
+            raw_response = run_inference(
+                current_prompt, scratchpad_widget, root, self.model_name)
             try:
-                json_resp = extract_json_block(base_response)
-                if isinstance(json_resp, list):
-                    json_resp = json_resp[0]
-                elif isinstance(json_resp, str):
-                    raise ValueError(
-                        "JSON block is a string instead of an object.")
-                return json_resp, base_response, base_prompt
-            except ValueError:
-                base_prompt = self._build_correction_prompt(
-                    base_prompt, base_response, error_hint)
+                # Use the robust extract_json_block function
+                json_resp = extract_json_block(raw_response)
+                # Optional: Add validation specific to expected JSON structure if needed
+                # e.g., if isinstance(json_resp, dict) and 'required_key' in json_resp:
+                return json_resp, raw_response, current_prompt
+            except ValueError as e:
+                logging.warning(
+                    f"JSON extraction/validation failed (Attempt {retries + 1}/{max_retries}): {e}")
+                retries += 1
+                current_prompt = self._build_correction_prompt(
+                    current_prompt, raw_response, f"{error_hint} Error: {e}"
+                )
+            except Exception as e:  # Catch other potential errors during inference/parsing
+                logging.error(
+                    f"Unexpected error getting JSON response (Attempt {retries + 1}/{max_retries}): {e}")
+                retries += 1
+                current_prompt = self._build_correction_prompt(
+                    current_prompt, raw_response, f"Unexpected error occurred: {e}. {error_hint}"
+                )
 
-    async def agent_execution(self, base_prompt: List[dict], output_widget: Any, scratchpad_widget: Any, root: Any) -> str:
-        logging.debug("Base prompt for agent execution: %s", base_prompt)
-        json_instruct, base_response, base_prompt = await self._get_valid_json_response(
-            base_prompt, scratchpad_widget, root,
-            "Wrap the instruction in triple backticks and specify 'json' (starting with ```json)."
-        )
-        if 'use' in json_instruct and json_instruct['use'].lower() in ['python', 'tool']:
-            base_prompt.append(
-                {'role': 'assistant', 'content': json.dumps(base_response)})
-            ai_choice = json_instruct["use"].lower()
-            colored_print(f"Starting {ai_choice.capitalize()} Use", Fore.BLUE)
-            responses = []
-            if ai_choice == "python":
-                move_to_python()
-                py_base_prompt = load_message_template('python')
-                py_base_prompt.append(
-                    {'role': 'user', 'content': self.full_prompt})
-                final_response, code_script, status_message, py_base_prompt = await self.code_use(py_base_prompt, scratchpad_widget, root)
-                responses.append(
-                    f"{MD_HEADING}{status_message}\n\n{MD_HEADING} Observations:\n{final_response}")
-            elif ai_choice == "tool":
-                move_to_tool()
-                tool_base_prompt = load_message_template('tool')
-                tool_base_prompt.append(
-                    {'role': 'user', 'content': self.full_prompt})
-                final_response, code_script, status_message, tool_base_prompt = await self.tool_use(tool_base_prompt, scratchpad_widget, root)
-                responses.append(
-                    f"{MD_HEADING}{status_message}\n\n{MD_HEADING} Observations:\n{final_response}")
-                return_to_normal()
-        else:
-            correction_prompt = self._build_correction_prompt(
-                base_prompt, json.dumps(base_response),
-                "Produce a JSON object with a 'use' key and value either python or tool."
+        logging.error(
+            f"Failed to get valid JSON response after {max_retries} retries.")
+        # Return None for JSON if all retries fail
+        return None, raw_response, current_prompt
+
+    async def agent_execution(self, base_prompt: List[dict], output_widget: Any,
+                              scratchpad_widget: Any, root: Any) -> Tuple[str, str]:
+        """Main agent execution loop: Decide -> Act (Python/Tool/Respond) -> Check -> Final Answer."""
+        logging.info("=== Starting Agent Execution Cycle ===")
+        action_log = ""
+        self.current_retries = 0  # Reset retries for this cycle
+
+        while self.current_retries < MAX_RETRIES:
+            logging.info(
+                f"--- Agent Step (Attempt {self.current_retries + 1}/{MAX_RETRIES}) ---")
+            # 1. Decide Action Type (Python, Tool, Respond)
+            colored_print("Step 1: Deciding Action...", Fore.CYAN)
+            json_instruct, raw_response, current_prompt = await self._get_valid_json_response(
+                base_prompt, scratchpad_widget, root, JSON_ERROR_HINT
             )
-            return await self.agent_execution(correction_prompt, output_widget, scratchpad_widget, root)
-        colored_print("Checking Results", Fore.BLUE)
-        check_prompt = load_message_template('check', self.summary)
-        check_prompt.append(
-            {'role': 'user', 'content': f"Based on the following:\n{responses}\n\nWas the request '{self.full_prompt}' answered?"})
-        check_response = run_inference(
-            check_prompt, scratchpad_widget, root, self.model_name)
-        json_check, _, base_prompt = await self._get_valid_json_response(
-            check_prompt, scratchpad_widget, root,
-            "Wrap the check response in triple backticks with a JSON object containing the key 'use' and a value of either yes or no."
-        )
-        if 'use' in json_check and json_check['use'].lower() in ['yes', 'no']:
-            base_prompt.append(
-                {'role': 'assistant', 'content': json.dumps(check_response)})
-            ai_choice = json_check["use"].lower()
-            if ai_choice == "yes":
-                solve_base_prompt = load_message_template('answer')
+
+            if json_instruct is None:
+                final_response = "Agent failed to decide on an action after multiple retries."
+                action_log += f"\n[Decision Error]\n{final_response}\nRaw Response:\n{raw_response}"
+                self.current_retries = MAX_RETRIES  # Break loop
+                continue  # Go to end of loop
+
+            # Validate 'use' key
+            if not isinstance(json_instruct, dict) or 'use' not in json_instruct:
+                current_prompt = self._build_correction_prompt(
+                    current_prompt, raw_response, USE_KEY_ERROR_HINT)
+                self.current_retries += 1
+                continue  # Retry decision
+
+            ai_choice = str(json_instruct.get("use", "")).lower()
+            if ai_choice not in ['python', 'tool', 'respond']:
+                current_prompt = self._build_correction_prompt(
+                    current_prompt, raw_response, USE_KEY_ERROR_HINT + f" Got: '{ai_choice}'")
+                self.current_retries += 1
+                continue  # Retry decision
+
+            # Append successful decision to prompt history
+            # Use raw_response which contains the JSON
+            current_prompt.append(
+                {'role': 'assistant', 'content': raw_response})
+            base_prompt = current_prompt  # Update base for next potential loop iteration
+
+            colored_print(f"Decision: Use '{ai_choice}'", Fore.BLUE)
+            action_log += f"\n[Decision]\nChoice: {ai_choice}\nRationale (implied): {raw_response}\n"
+
+            # 2. Execute Action
+            final_response = ""
+            execution_successful = False
+
+            if ai_choice == "python":
+                colored_print("Step 2: Executing Python Code...", Fore.CYAN)
+                self.agent_manager.move_to_python()
+                py_base_prompt = load_message_template(
+                    'python', self.summary)  # Pass summary
+                # Add original user request to the python prompt context
+                py_base_prompt.append(
+                    {'role': 'user', 'content': f"Based on the request:\n'{self.full_prompt}'\nGenerate the necessary Python code."})
+                # Append previous steps from the main prompt if useful context exists? (Careful not to make it too long)
+                # py_base_prompt.extend(current_prompt[-4:]) # Add last few turns for context?
+
+                exec_response, code_script, status_message, py_base_prompt_result = await self.code_use(
+                    py_base_prompt, scratchpad_widget, root)
+
+                action_log += (
+                    f"\n[Python Code Execution]\n"
+                    f"Code:\n```python\n{''.join(code_script)}\n```\n"
+                    f"Status: {status_message}\n"
+                    f"Result/Response: {exec_response}\n"
+                )
+                if status_message != "Max retries reached.":  # Check for success based on message content
+                    execution_successful = True
+                    final_response = exec_response  # Use the response generated after code execution
+
+            elif ai_choice == "tool":
+                colored_print("Step 2: Executing Tool...", Fore.CYAN)
+                self.agent_manager.move_to_tool()
+                tool_base_prompt = load_message_template(
+                    'tool', self.summary)  # Pass summary
+                tool_base_prompt.append(
+                    {'role': 'user', 'content': f"Based on the request:\n'{self.full_prompt}'\nSelect and configure the appropriate tool."})
+                # tool_base_prompt.extend(current_prompt[-4:]) # Context?
+
+                exec_response, tool_instruct, status_messages, tool_base_prompt_result = await self.tool_use(
+                    tool_base_prompt, scratchpad_widget, root)
+
+                status_msg_str = "\n".join(status_messages)
+                action_log += (
+                    f"\n[Tool Execution]\n"
+                    f"Instruction:\n```json\n{json.dumps(tool_instruct, indent=2)}\n```\n"
+                    f"Status: {status_msg_str}\n"
+                    f"Result/Response: {exec_response}\n"
+                )
+                if "Max retries reached." not in status_msg_str:  # Check for success
+                    execution_successful = True
+                    final_response = exec_response  # Use the response generated after tool execution
+
+            elif ai_choice == "respond":
+                colored_print(
+                    "Step 2: Generating Direct Response...", Fore.CYAN)
+                solve_base_prompt = load_message_template(
+                    'answer', self.summary)
                 solve_base_prompt.append(
-                    {'role': 'user', 'content': f"Based on the following:\n{responses}\n\nWhat is the final answer to the following request:\n'{self.full_prompt}'?"})
+                    {'role': 'user', 'content': f"Provide a direct final answer to the following request:\n'{self.full_prompt}'?"}
+                    # Optional: Include context from current_prompt if needed
+                    # solve_base_prompt.extend(current_prompt[-4:])
+                )
                 final_response = run_inference(
                     solve_base_prompt, output_widget, root, self.model_name)
-                return final_response
+                action_log += f"\n[Direct Response]\nAnswer: {final_response}\n"
+                # Direct response always breaks the loop to return the answer.
+                self.agent_manager.return_to_normal()  # Ensure agent returns visually
+                return final_response, action_log
+
+            # Signal agent return after action attempt
+            self.agent_manager.return_to_normal()
+
+            # If execution failed, retry the decision loop
+            if not execution_successful:
+                colored_print(
+                    "Execution failed, retrying decision...", Fore.YELLOW)
+                self.current_retries += 1
+                # Add failure context for the next decision attempt
+                base_prompt.append(
+                    {'role': 'user', 'content': f"The previous attempt to use '{ai_choice}' failed. Review the log:\n{action_log}\nReassess the best approach ('python', 'tool', or 'respond') to fulfill the request: '{self.full_prompt}'"})
+                continue  # Go to the start of the while loop
+
+            # 3. Check if the request is fulfilled
+            colored_print(
+                "Step 3: Checking if Request Fulfilled...", Fore.CYAN)
+            check_prompt = load_message_template('check', self.summary)
+            check_prompt.append({
+                'role': 'user',
+                'content': f"Review the execution log:\n{action_log}\n\nBased *only* on this log, was the original request '{self.full_prompt}' successfully fulfilled? Respond yes or no."
+            })
+
+            # Get validated check response (yes/no)
+            json_check, raw_check_response, check_prompt = await self._get_valid_json_response(
+                check_prompt, scratchpad_widget, root, CHECK_KEY_ERROR_HINT
+            )
+
+            if json_check is None:
+                final_response = "Agent failed to check the result after multiple retries."
+                action_log += f"\n[Check Error]\n{final_response}\nRaw Response:\n{raw_check_response}"
+                self.current_retries = MAX_RETRIES  # Break loop
+                continue  # Go to end of loop
+
+            # Validate check response structure
+            if not isinstance(json_check, dict) or 'use' not in json_check:
+                base_prompt = self._build_correction_prompt(
+                    check_prompt, raw_check_response, CHECK_KEY_ERROR_HINT)
+                self.current_retries += 1
+                # Retry (will likely start from decision again based on main loop structure)
+                continue
+
+            check_choice = str(json_check.get("use", "")).lower()
+            if check_choice not in ['yes', 'no']:
+                base_prompt = self._build_correction_prompt(
+                    check_prompt, raw_check_response, CHECK_KEY_ERROR_HINT + f" Got: '{check_choice}'")
+                self.current_retries += 1
+                continue  # Retry
+
+            # Append check result to prompt history
+            current_prompt = check_prompt  # Start from the check prompt context
+            current_prompt.append(
+                {'role': 'assistant', 'content': raw_check_response})
+            base_prompt = current_prompt  # Update base prompt
+
+            action_log += f"\n[Check Result]\nFulfilled: {check_choice}\n"
+            colored_print(f"Request fulfilled: {check_choice}", Fore.BLUE)
+
+            # 4. Final Answer Generation or Loop Continuation
+            if check_choice == "yes":
+                colored_print("Step 4: Generating Final Answer...", Fore.CYAN)
+                solve_base_prompt = load_message_template(
+                    'answer', self.summary)
+                solve_base_prompt.append({
+                    'role': 'user',
+                    'content': f"Based on the following execution log:\n{action_log}\n\nProvide the final, comprehensive answer to the original request:\n'{self.full_prompt}'"
+                })
+                final_answer = run_inference(
+                    solve_base_prompt, output_widget, root, self.model_name)
+                action_log += f"\n[Final Answer]\n{final_answer}\n"
+                logging.info(
+                    "=== Agent Execution Cycle Completed Successfully ===")
+                return final_answer, action_log
             else:
-                correction_prompt = self._build_correction_prompt(
-                    base_prompt, json.dumps(check_response),
-                    "Produce a JSON object with a 'use' key and value either python or tool."
+                # If not fulfilled, add context and loop back to decision step
+                colored_print(
+                    "Request not fulfilled, continuing execution...", Fore.YELLOW)
+                self.current_retries += 1
+                base_prompt.append(
+                    {'role': 'user', 'content': f"The request '{self.full_prompt}' was not fulfilled. Review the log:\n{action_log}\nDecide the *next* step ('python', 'tool', or 'respond')."})
+                # Continue to the next iteration of the while loop
+
+        # If loop finishes due to max retries
+        logging.error(f"Agent execution failed after {MAX_RETRIES} attempts.")
+        final_response = final_response or "Agent execution failed to complete after maximum retries."
+        action_log += "\n[Execution Failed]\nAgent stopped after maximum retries.\n"
+        return final_response, action_log
+
+    async def tool_use(self, base_prompt: List[dict], scratchpad_widget: Any, root: Any) -> Tuple[str, Dict, List[str], List[dict]]:
+        """Handles the process of selecting, executing, and responding to a tool use."""
+        retries = 0
+        current_prompt = base_prompt
+        tool_instruct: Dict = {}
+        status_messages: List[str] = ["Tool use not attempted."]
+
+        while retries < MAX_RETRIES:
+            logging.info(
+                f"--- Tool Use Step (Attempt {retries + 1}/{MAX_RETRIES}) ---")
+            # 1. Get Tool Instruction
+            json_resp, raw_response, current_prompt = await self._get_valid_json_response(
+                current_prompt, scratchpad_widget, root,
+                "Provide a JSON object with 'tool' and 'parameters' keys, wrapped in ```json.",
+                max_retries=1  # Only one try to get the instruction per outer loop attempt
+            )
+
+            if json_resp is None or not isinstance(json_resp, dict) or 'tool' not in json_resp:
+                logging.warning("Failed to get valid tool instruction JSON.")
+                status_messages = [
+                    "Failed to generate valid tool instruction."]
+                # Build correction prompt for the *next* outer loop iteration if needed
+                current_prompt = self._build_correction_prompt(
+                    current_prompt, raw_response,
+                    "Invalid tool instruction. Provide a JSON object with 'tool' and 'parameters' keys."
                 )
-                return await self.agent_execution(correction_prompt, output_widget, scratchpad_widget, root)
-        else:
-            correction_prompt = self._build_correction_prompt(
-                base_prompt, json.dumps(check_response),
-                "Produce a JSON object with a 'use' key and value either python or tool."
-            )
-            return await self.agent_execution(correction_prompt, output_widget, scratchpad_widget, root)
+                retries += 1  # Consume a retry for the tool_use cycle
+                continue  # Try getting instruction again in next loop
 
-    async def tool_use(self, base_prompt: List[dict], scratchpad_widget: Any, root: Any, retries: int = 0) -> Tuple[str, List[str], List[str], List[dict]]:
-        if retries >= MAX_RETRIES:
-            return ("Tool use failed after maximum retries.", [], ["Max retries reached."], base_prompt)
-        base_response = run_inference(
-            base_prompt, scratchpad_widget, root, self.model_name)
-        try:
-            json_instruct = extract_json_block(base_response)
-        except ValueError:
-            correction_prompt = self._build_correction_prompt(
-                base_prompt, base_response,
-                "Wrap the instruction in triple backticks and specify 'json' (starting with ```json)."
-            )
-            return await self.tool_use(correction_prompt, scratchpad_widget, root, retries + 1)
-        status_messages = []
-        if isinstance(json_instruct, list):
-            json_instruct = json_instruct[0]
-        elif isinstance(json_instruct, str):
-            correction_prompt = self._build_correction_prompt(
-                base_prompt, base_response,
-                "Wrap the instruction in triple backticks with a JSON object containing tool and parameters."
-            )
-            return await self.tool_use(correction_prompt, scratchpad_widget, root, retries + 1)
-        status_message = execute_tool(json_instruct)
-        update_status_msg(status_message)
-        if status_message['status'] != "200":
-            correction_prompt = self._build_correction_prompt(
-                base_prompt, base_response,
-                f"Generated tool instruction:\n{json.dumps(json_instruct)}\nExecution failed: {status_message['message']}\nFix the above error"
-            )
-            return await self.tool_use(correction_prompt, scratchpad_widget, root, retries + 1)
-        else:
-            base_prompt.append(
-                {'role': 'assistant', 'content': json.dumps(base_response)})
-            status_messages.append(status_message['message'])
-            final_prompt = base_prompt.copy()
-            final_prompt.append(
-                {'role': 'user', 'content': f"Generated tool instruction:\n{json.dumps(json_instruct)}\nExecution result:\n{status_message['message']}"})
-            final_response = run_inference(
-                final_prompt, scratchpad_widget, root, self.model_name)
-            base_prompt.append(
-                {'role': 'assistant', 'content': final_response})
-            return final_response, json_instruct, status_messages, base_prompt
+            tool_instruct = json_resp  # Got valid instruction structure
+            # Append successful instruction generation
+            current_prompt.append(
+                {'role': 'assistant', 'content': raw_response})
 
-    async def code_use(self, base_prompt: List[dict], scratchpad_widget: Any, root: Any, retries: int = 0) -> Tuple[str, List[str], str, List[dict]]:
-        if retries >= MAX_RETRIES:
-            return ("Code use failed after maximum retries.", [], "Max retries reached.", base_prompt)
-        base_response = run_inference(
-            base_prompt, scratchpad_widget, root, self.model_name)
-        code_script = self.extract_code_blocks(base_response, 'python')
-        status_message = execute_python_code("".join(code_script))
-        update_status_msg(status_message)
-        if status_message['status'] != "200":
-            correction_prompt = self._build_correction_prompt(
-                base_prompt, base_response,
-                f"Tested code:\n{''.join(code_script)}\nExecution result:\n{status_message['message']}\nFix and complete the code"
-            )
-            return await self.code_use(correction_prompt, scratchpad_widget, root, retries + 1)
-        else:
-            # Update the pygame global display with the generated code
-            from simple.agent_interactions import set_generated_code
-            set_generated_code("".join(code_script))
-            base_prompt.append({'role': 'assistant', 'content': base_response})
-            base_prompt.append(
-                {'role': 'user', 'content': f"Generated code:\n{''.join(code_script)}\nExecution result:\n{status_message['message']}"})
-            final_response = run_inference(
-                base_prompt, scratchpad_widget, root, self.model_name)
-            base_prompt.append(
-                {'role': 'assistant', 'content': final_response})
-            return final_response, code_script, status_message['message'], base_prompt
+            # 2. Execute Tool
+            colored_print(
+                f"Executing Tool: {tool_instruct.get('tool')}...", Fore.GREEN)
+            status_result = execute_tool(
+                tool_instruct, self.agent_manager)  # Pass manager
+            status_messages = [status_result.get(
+                'message', 'No message provided.')]
+            self.agent_manager.update_status_msg(
+                # Update visual status
+                f"Tool {tool_instruct.get('tool')}: {status_messages[0][:100]}...")
 
-    async def decide_execution(self, text_prompt: dict, output_widget: Any, scratchpad_widget: Any, root: Any, full_prompt) -> str:
+            # 3. Handle Execution Result
+            if status_result.get('status') != "200":
+                logging.warning(f"Tool execution failed: {status_messages[0]}")
+                colored_print(f"Tool failed: {status_messages[0]}", Fore.RED)
+                # Build correction prompt for the *next* attempt
+                current_prompt.append({
+                    'role': 'user',
+                    'content': f"Tool execution failed.\nInstruction:\n```json\n{json.dumps(tool_instruct, indent=2)}\n```\nError:\n{status_messages[0]}\n\nPlease correct the tool instruction or parameters and try again."
+                })
+                retries += 1
+                continue  # Retry getting instruction/executing
+            else:
+                # Execution successful
+                colored_print(
+                    f"Tool executed successfully. Result: {status_messages[0]}", Fore.GREEN)
+                final_prompt = current_prompt.copy()
+                final_prompt.append({
+                    'role': 'user',
+                    'content': f"Tool execution successful.\nInstruction:\n```json\n{json.dumps(tool_instruct, indent=2)}\n```\nResult:\n{status_messages[0]}\n\nProvide a response summarizing the result or indicating the next step."
+                })
+                final_response = run_inference(
+                    final_prompt, scratchpad_widget, root, self.model_name)
+                # Append the final summarization to the ongoing prompt history
+                current_prompt.append(
+                    {'role': 'assistant', 'content': final_response})
+                return final_response, tool_instruct, status_messages, current_prompt  # Success
+
+        # If loop finishes due to retries
+        logging.error("Tool use failed after maximum retries.")
+        return ("Tool use failed after maximum retries.", tool_instruct, ["Max retries reached."], current_prompt)
+
+    async def code_use(self, base_prompt: List[dict], scratchpad_widget: Any, root: Any) -> Tuple[str, List[str], str, List[dict]]:
+        """Handles the process of generating, executing, and responding to Python code use."""
+        retries = 0
+        current_prompt = base_prompt
+        code_script: List[str] = []
+        status_message: str = "Code use not attempted."
+
+        while retries < MAX_RETRIES:
+            logging.info(
+                f"--- Code Use Step (Attempt {retries + 1}/{MAX_RETRIES}) ---")
+            # 1. Generate Code
+            raw_response = run_inference(
+                current_prompt, scratchpad_widget, root, self.model_name)
+
+            try:
+                # Extract potentially multiple blocks and join them
+                extracted_blocks = self.extract_code_blocks(
+                    raw_response, 'python')
+                if not extracted_blocks:
+                    raise ValueError("No Python code blocks found.")
+                # Join blocks into one script string
+                code_script = ["\n".join(extracted_blocks)]
+
+            except ValueError as e:
+                logging.warning(f"Code extraction failed: {e}")
+                current_prompt = self._build_correction_prompt(
+                    current_prompt, raw_response,
+                    f"No valid Python code blocks (```python ... ```) found. Please provide the code. Error: {e}"
+                )
+                retries += 1
+                continue  # Retry generation
+
+            # Append successful generation
+            current_prompt.append(
+                {'role': 'assistant', 'content': raw_response})
+
+            # 2. Execute Code
+            colored_print(
+                f"Executing Python Code:\n```python\n{code_script[0][:200]}...\n```", Fore.GREEN)
+            status_result = execute_python_code(
+                "".join(code_script))  # Execute the joined script
+            status_message = status_result.get(
+                'message', 'No message provided.')
+            self.agent_manager.set_generated_code(
+                "".join(code_script))  # For display in Python mode
+            self.agent_manager.update_status_msg(
+                f"Python: {status_message[:100]}...")  # Update visual status
+
+            # 3. Handle Execution Result
+            if status_result.get('status') != "200":
+                logging.warning(f"Code execution failed: {status_message}")
+                colored_print(f"Code failed: {status_message}", Fore.RED)
+                # Build correction prompt for the *next* attempt
+                current_prompt.append({
+                    'role': 'user',
+                    'content': f"Code execution failed.\nCode:\n```python\n{''.join(code_script)}\n```\nError:\n{status_message}\n\nPlease correct the code and try again."
+                })
+                retries += 1
+                continue  # Retry generation/execution
+            else:
+                # Execution successful
+                colored_print(
+                    f"Code executed successfully. Result: {status_message}", Fore.GREEN)
+                final_prompt = current_prompt.copy()
+                final_prompt.append({
+                    'role': 'user',
+                    'content': f"Code execution successful.\nCode:\n```python\n{''.join(code_script)}\n```\nResult:\n{status_message}\n\nProvide a response summarizing the result or indicating the next step."
+                })
+                final_response = run_inference(
+                    final_prompt, scratchpad_widget, root, self.model_name)
+                # Append the final summarization to the ongoing prompt history
+                current_prompt.append(
+                    {'role': 'assistant', 'content': final_response})
+                return final_response, code_script, status_message, current_prompt  # Success
+
+        # If loop finishes due to retries
+        logging.error("Code use failed after maximum retries.")
+        return ("Code use failed after maximum retries.", code_script, "Max retries reached.", current_prompt)
+
+    async def decide_execution(self, text_prompt: dict, output_widget: Any,
+                               scratchpad_widget: Any, root: Any, full_prompt: str) -> Tuple[str, str]:
+        """Entry point for agent execution based on a user prompt."""
         self.full_prompt = full_prompt
-        base_prompt = load_message_template('base', '')
+        # Update model name from GUI if changed
+        self.agent_executor.model_name = self.model_var.get()
+        # Load base template, add summary context, then add user prompt
+        base_prompt = load_message_template('base', self.summary)
+        # Append {'role': 'user', 'content': full_prompt}
         base_prompt.append(text_prompt)
         return await self.agent_execution(base_prompt, output_widget, scratchpad_widget, root)
 
     @staticmethod
     def extract_code_blocks(text: str, language: str) -> List[str]:
+        """Extracts code blocks for a specified language, handling optional language labels."""
+        # Pattern looks for ``` optionally followed by the language, newline, then captures content until ```
+        pattern = rf"```{re.escape(language)}\s*\n(.*?)\n```|```\n(.*?)\n```"
         try:
-            pattern = rf"```(?:\n\s*)*{re.escape(language)}\s*\n(.*?)```"
-            return re.findall(pattern, text, re.DOTALL)
+            matches = re.findall(pattern, text, re.DOTALL | re.IGNORECASE)
+            # findall returns tuples for groups, filter out empty strings and flatten
+            blocks = [block for match in matches for block in match if block]
+            if not blocks:
+                # Fallback: Try finding just the content between any triple backticks if language specific fails
+                pattern_any = r"```(?:\w*\s*)?\n(.*?)\n```"
+                matches_any = re.findall(pattern_any, text, re.DOTALL)
+                if matches_any:
+                    logging.warning(
+                        f"Found code blocks but language '{language}' mismatch or missing. Using generic blocks.")
+                    blocks = [block for block in matches_any if block]
+
+            if not blocks:
+                logging.warning(
+                    f"No code blocks found for language '{language}' or generic ``` blocks.")
+                # Optional: Could try parsing the whole text if it looks like code, but risky
+                # if language == 'python' and ('def ' in text or 'import ' in text): return [text]
+
+            return blocks
         except Exception as e:
-            print(e)
+            logging.error(f"Error extracting code blocks: {e}")
             return []

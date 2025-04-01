@@ -1,2 +1,2 @@
-from simple.image import imregen
+from simple.image import imgen
 
