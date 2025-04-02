@@ -6,10 +6,8 @@ import logging
 from simple.code.utils import colored_print, strip_model_escapes, Fore
 from simple.code.logging_config import setup_logging
 
-# Apply nest_asyncio to allow nested event loops.
 nest_asyncio.apply()
 
-# Centralized logging setup
 setup_logging()
 
 current_client = None
@@ -35,7 +33,6 @@ class InferenceClient:
                 widget.insert("end", s)
                 widget.see("end")
 
-        # Use root.after if available; otherwise, print to console.
         if widget is not None and root is not None:
             root.after(0, append_text, "\n")
         else:

@@ -26,10 +26,8 @@ def get_directory_tree(path: str) -> str:
         return False
 
     for root, directories, files in os.walk(path):
-        # Filter out ignored directories
         directories[:] = [d for d in directories if not is_ignored(os.path.join(root, d))]
         
-        # Filter out ignored files
         files = [f for f in files if not is_ignored(os.path.join(
             root, f)) and f.split('.')[-1] in ['py', 'ts', 'js', 'tsx', 'jsx', 'md']]
 

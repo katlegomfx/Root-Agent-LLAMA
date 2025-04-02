@@ -1,4 +1,3 @@
-# Bot\build\code\io_utils.py
 import os
 import json
 from Bot.build.code.session.constants import (

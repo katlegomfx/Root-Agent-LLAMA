@@ -6,9 +6,7 @@ from typing import Dict, List, Union
 from colorama import Fore, Style
 from simple.code.system_prompts import MD_HEADING
 
-# Pattern to remove model artifacts (e.g., '←[0m')
 ESC_LIKE_PATTERN = re.compile(r'(?:←)?\[\d+m')
-# Check if the output supports color.
 USE_COLOR = sys.stdout.isatty()
 
 
@@ -88,7 +86,6 @@ def extract_json_block(text: str) -> Union[Dict, List, str]:
         ValueError: If no valid JSON block is found.
     """
 
-    # First, try to find JSON within triple backticks (with or without language label)
     pattern = r"```(?:\w*\n)?(.*?)```"
     matches = re.findall(pattern, text, re.DOTALL)
 
@@ -100,7 +97,6 @@ def extract_json_block(text: str) -> Union[Dict, List, str]:
             except json.JSONDecodeError:
                 continue  # Try the next match if parsing fails
 
-    # If no JSON within backticks was found, attempt to parse the entire text as JSON
     try:
         json_obj = json.loads(text.strip())
         return json_obj

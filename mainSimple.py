@@ -11,7 +11,7 @@ def generate_images_background():
     path = "simple/gag/pygame_python_logo.png"
     if not os.path.exists(path):
         generate_image(
-            prompt="Minimalistic Python logo",
+            prompt="Python Programming Language logo",
             output_filename=path,
             transparent=True
         )
@@ -27,7 +27,7 @@ def generate_images_background():
     path = "simple/gag/icon.png"
     if not os.path.exists(path):
         generate_image(
-            prompt=f"Best picture of {thesysname}",
+            prompt=f"Robot Icon for a system called {thesysname}",
             output_filename=path,
             transparent=True
         )

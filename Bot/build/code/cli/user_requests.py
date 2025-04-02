@@ -307,11 +307,12 @@ class UserRequests:
         directory2 = "./app/appgen"
         ts_files_2 = convert_to_md(get_ts_files_content(directory2))
 
+        entry = read_file_content('main.py')
         base_code = "".join(code_corpus('./simple'))
         user_request = user_input.replace('simple ', '')
         if len(user_request) >= 3:
             final_request = f"\n\n# {user_request}"
-            prompt = f'''# Considering the following:\n\n{
+            prompt = f'''# Considering the following:\n{entry}\n{
                 base_code}{final_request}\n\n{tips}'''
         else:
             prompt = f'# Considering the following:\n\n{

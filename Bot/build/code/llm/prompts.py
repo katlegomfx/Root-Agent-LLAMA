@@ -499,6 +499,7 @@ def code_corpus(path: str):
         'self_autoCodebase',
         'tests',
         'to_confirm_tools',
+        'node_modules'
 
     ]
     paths = get_py_files_recursive(

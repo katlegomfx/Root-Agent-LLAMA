@@ -2,7 +2,6 @@ import logging
 import re
 import os
 
-# Regular expression to match ANSI escape sequences.
 ANSI_ESCAPE = re.compile(r'\x1B\[[0-?]*[ -/]*[@-~]')
 
 
@@ -17,7 +16,6 @@ class NoColorFormatter(logging.Formatter):
 
 
 def setup_logging():
-    # Optionally, allow disabling color via an environment variable.
     disable_color = os.environ.get("DISABLE_COLOR_LOGS", "1") == "1"
 
     handler = logging.StreamHandler()

@@ -7,7 +7,6 @@ import json
 from simple.code.inference import run_inference
 from simple.code.logging_config import setup_logging
 
-# Centralized logging setup
 setup_logging()
 chroma_client = chromadb.Client()
 

@@ -1,4 +1,3 @@
-# Bot\build\code\cli\ai_requests.py
 import os
 import json
 

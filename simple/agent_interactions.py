@@ -1,4 +1,3 @@
-# ./simple/agent_interactions.py:
 """
 Refactored Agent Interactions Module
 
@@ -29,7 +28,6 @@ WINDOW_SIZE = (640, 480)
 
 class AgentInteractionManager:
     def __init__(self):
-        # Replace globals with instance attributes.
         self.desired_position: Optional[Tuple[int, int]] = None
         self.mode: str = "normal"  # Modes: "normal", "tool_selection", "python_code"
         self.tk_root: Optional[tk.Tk] = None
@@ -40,12 +38,6 @@ class AgentInteractionManager:
         self._pygame_running = threading.Event()  # Event to signal pygame loop state
         self._tk_queue = queue.Queue()  # Queue for Tkinter updates from Pygame thread
 
-        # If no tk_root provided externally, create one internally but keep it hidden.
-        # This allows AgentExecutor to instantiate this class without needing Tkinter initially.
-        # if self.tk_root is None:
-        #     self.tk_root = tk.Tk()
-        #     self.tk_root.withdraw()
-        # Defer Tk root creation/assignment until needed or provided externally.
 
     def _ensure_tk_root(self):
         """Ensures tk_root exists, creating a hidden one if necessary."""
@@ -58,9 +50,7 @@ class AgentInteractionManager:
         """Safely schedule a function call in the Tkinter main thread."""
         self._ensure_tk_root()
         self._tk_queue.put((callable_func, args))
-        # Signal Tkinter thread to process the queue
         if self.tk_root:
-            # Check queue periodically
             self.tk_root.after(10, self._process_tk_queue)
 
     def _process_tk_queue(self):
@@ -92,11 +82,9 @@ class AgentInteractionManager:
         """Launches the Pygame simulation in a separate thread."""
         if not self._pygame_running.is_set():
             try:
-                # Disable launch button if it exists and is bound to this manager instance
                 if hasattr(self, 'launch_button') and self.launch_button:
                     self.launch_button.config(state=tk.DISABLED)
             except (AttributeError, tk.TclError):
-                # Ignore if button doesn't exist or window is closed
                 pass
             self._pygame_running.set()  # Signal that pygame is starting/running
             game_thread = threading.Thread(target=self.run_game, daemon=True)
@@ -108,7 +96,6 @@ class AgentInteractionManager:
         """Signals the Pygame loop to stop."""
         self._pygame_running.clear()  # Signal pygame to stop
         print("Attempting to stop Pygame simulation...")
-        # Any Tkinter root cleanup should be handled by the owner of the root
 
     def run_game(self) -> None:
         """Runs the main Pygame simulation loop."""
@@ -161,16 +148,12 @@ class AgentInteractionManager:
         finally:
             pygame.quit()
             print("Pygame quit.")
-            # Re-enable launch button if it exists
             try:
                 if hasattr(self, 'launch_button') and self.launch_button and self.tk_root:
-                    # Use schedule_tk_update to safely modify Tkinter widget from this thread
                     self._schedule_tk_update(lambda btn: btn.config(
                         state=tk.NORMAL), self.launch_button)
             except tk.TclError:
-                # Ignore if window is already closed
                 pass
-            # Do not call sys.exit() here; let the main thread manage application exit.
 
     def _set_pygame_icon(self):
         try:
@@ -190,7 +173,6 @@ class AgentInteractionManager:
             return None
 
     def _move_agent(self, agent_x: int, agent_y: int) -> Tuple[int, int]:
-        # Explicit check if there's a destination
         if self.desired_position is None:
             return agent_x, agent_y
 
@@ -198,19 +180,16 @@ class AgentInteractionManager:
         dx = target_x - agent_x
         dy = target_y - agent_y
 
-        # Move horizontally
         if dx > 0:
             agent_x = min(agent_x + AGENT_SPEED, target_x)
         elif dx < 0:
             agent_x = max(agent_x - AGENT_SPEED, target_x)
 
-        # Move vertically
         if dy > 0:
             agent_y = min(agent_y + AGENT_SPEED, target_y)
         elif dy < 0:
             agent_y = max(agent_y - AGENT_SPEED, target_y)
 
-        # Check if destination reached
         if (agent_x, agent_y) == (target_x, target_y):
             self.desired_position = None  # Arrived
 
@@ -220,7 +199,6 @@ class AgentInteractionManager:
         python_target_pos = (50, 100)
         tool_target_pos = (500, 100)
 
-        # Render Python button.
         python_target_rect = pygame.Rect(*python_target_pos, 50, 50)
         if python_image:
             screen.blit(python_image, python_target_rect.topleft)
@@ -233,7 +211,6 @@ class AgentInteractionManager:
         screen.blit(python_label, (python_target_rect.centerx - python_label.get_width() // 2,
                                    python_target_rect.top - python_label.get_height() - 5))
 
-        # Render Tool button.
         tool_target_rect = pygame.Rect(*tool_target_pos, 50, 50)
         if tool_image:
             screen.blit(tool_image, tool_target_rect.topleft)
@@ -243,11 +220,9 @@ class AgentInteractionManager:
         screen.blit(tool_label, (tool_target_rect.centerx - tool_label.get_width() // 2,
                                  tool_target_rect.top - tool_label.get_height() - 5))
 
-        # Trigger mode transitions only when agent arrives at the target
         if self.desired_position is None:  # Only trigger if not moving
             if (agent_x, agent_y) == python_target_pos:
                 self.mode = "python_code"
-                # Schedule Tkinter window display using the queue
                 self._schedule_tk_update(self.show_python_code_window)
             elif (agent_x, agent_y) == tool_target_pos:
                 self.mode = "tool_selection"
@@ -270,7 +245,6 @@ class AgentInteractionManager:
 
         for i, tool_name in enumerate(tools):
             pos = self.get_tool_position(i, total)
-            # Center the rect on pos
             rect = pygame.Rect(pos[0] - 25, pos[1] - 25, 50, 50)
             color = (100 + i * (155 // total) if total >
                      0 else 100, 100, 150)  # Adjust color spread
@@ -279,15 +253,12 @@ class AgentInteractionManager:
             screen.blit(
                 label, (rect.centerx - label.get_width() // 2, rect.top - label.get_height() - 5))
 
-            # Check for arrival at a tool position
             if self.desired_position is None and (agent_x, agent_y) == pos:
                 if self.selected_tool == tool_name and not self.tool_info_shown:
                     self.tool_info_shown = True
-                    # Schedule Tkinter window using the queue
                     self._schedule_tk_update(
                         self.show_tool_info_window, self.selected_tool)
                 elif self.selected_tool != tool_name:
-                    # This case shouldn't happen if move_to_tool_dynamic sets selected_tool correctly
                     print(
                         f"Warning: Agent arrived at tool '{tool_name}' but expected '{self.selected_tool}'")
 
@@ -314,7 +285,6 @@ class AgentInteractionManager:
                 prompt, (WINDOW_SIZE[0] // 2 - prompt.get_width() // 2, 60))
 
     def _draw_agent(self, screen, font, agent_x, agent_y):
-        # Center the agent rect on its position
         agent_rect = pygame.Rect(agent_x - 25, agent_y - 25, 50, 50)
         pygame.draw.rect(screen, (255, 0, 0), agent_rect)
         agent_label = font.render("Agent", True, (255, 255, 255))
@@ -355,7 +325,6 @@ class AgentInteractionManager:
         output_text.insert(tk.END, "Click 'Execute' to run...")
         output_text.config(state=tk.DISABLED)
 
-        # Use a variable to prevent multiple executions
         execution_done = threading.Event()
 
         def execute_code_action() -> None:
@@ -373,8 +342,6 @@ class AgentInteractionManager:
             f = io.StringIO()
             try:
                 with contextlib.redirect_stdout(f):
-                    # Note: exec is generally unsafe if code comes from untrusted sources.
-                    # Here it's assumed the generated code is controlled/reviewed.
                     exec(code_to_run)
                 output = f.getvalue()
                 if not output:
@@ -389,7 +356,6 @@ class AgentInteractionManager:
             output_text.insert(tk.END, output)
             output_text.config(state=tk.DISABLED)
 
-            # Schedule window closure and return to normal mode
             code_window.after(
                 3000, self._close_code_window_and_return, code_window)
 
@@ -397,7 +363,6 @@ class AgentInteractionManager:
             code_window, text="Execute Code", command=execute_code_action)
         execute_button.pack(padx=10, pady=10)
 
-        # Automatically start execution
         code_window.after(100, execute_code_action)
 
     def show_tool_info_window(self, tool_name: str) -> None:
@@ -423,18 +388,14 @@ class AgentInteractionManager:
                 info_window.destroy()
             except tk.TclError:
                 pass  # Window might already be closed
-            # Optionally, return agent to start immediately after closing tool info
-            # self.return_to_normal() # Or handle this transition elsewhere
 
         close_button = tk.Button(
             info_window, text="Close", command=close_and_return)
         close_button.pack(padx=10, pady=10)
 
-        # Automatically close after a delay and return agent to start
         info_window.after(4000, close_and_return)
         info_window.after(4100, self.return_to_normal)  # Schedule return slightly after close
 
-    # Navigation methods.
     def move_to_python(self) -> None:
         if self.mode == "normal":
             self.desired_position = (50, 100)  # Target position for Python
@@ -446,7 +407,6 @@ class AgentInteractionManager:
             print("Agent moving to Tool interaction point.")
 
     def return_to_start(self) -> None:
-        # This function might be redundant if return_to_normal always goes to start
         if self.mode == "normal":
             self.desired_position = (300, 400)  # Center start position
             print("Agent returning to start position.")
@@ -480,7 +440,6 @@ class AgentInteractionManager:
             self.generated_python_code = ""  # Clear generated code display
             self.desired_position = (300, 400)  # Center start position
         elif self.mode == "normal" and self.desired_position is None:
-            # If already normal and not moving, ensure agent is at start
             self.desired_position = (300, 400)
 
     def launch_agent_interaction(self) -> None:
@@ -489,15 +448,12 @@ class AgentInteractionManager:
         self.launch_game()
 
 
-# When running this module directly.
 if __name__ == "__main__":
     root = tk.Tk()
     root.title("Agent Interaction Test Controller")
     manager = AgentInteractionManager()
     manager.tk_root = root  # Use the main Tkinter window for this test setup
-    # manager._process_tk_queue() # Start the queue processor
 
-    # Keep a reference to the button to re-enable it
     manager.launch_button = tk.Button(
         root, text="Launch Agent Simulation", command=manager.launch_agent_interaction)
     manager.launch_button.pack(padx=20, pady=20)
@@ -515,10 +471,8 @@ if __name__ == "__main__":
                             command=manager.move_to_tool)
     tool_choice.pack(side=tk.LEFT, padx=5)
 
-    # Example dynamic tool move buttons
     tool_names = list(tool_registry.keys())
     if tool_names:
-        # Only show if tools exist
         dynamic_tool_frame = tk.Frame(root)
         dynamic_tool_frame.pack(padx=20, pady=10)
         tk.Label(dynamic_tool_frame,

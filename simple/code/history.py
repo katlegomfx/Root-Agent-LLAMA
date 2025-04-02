@@ -5,7 +5,6 @@ from typing import Any, List, Optional
 import logging
 from simple.code.logging_config import setup_logging
 
-# Centralized logging setup
 setup_logging()
 
 
