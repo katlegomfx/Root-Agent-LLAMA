@@ -121,9 +121,14 @@ def get_tools_docs():
     """Gets list of tools that can be used"""
     base = [types.FunctionDeclaration.from_callable(
         callable=func, client=client).to_json_dict()
-        for name, func in tool_registry.items() if name in ['write_custom_python_file', 'execute_bash_command', 'create_file', 'modify_file', 'code_corpus']]
+        for name, func in tool_registry.items() if name in ['write_custom_python_file', 'execute_bash_command', 'create_file', 'modify_file', 'code_corpus', 'read_file', 'delete_file', 'rename_move_file', 'list_directory_contents']]
     return base
 
+
+# print()
+# print(get_tools_docs())
+# print()
+# input()
 
 def generate_text(prompt=DEFAULT_PROMPT, system_prompt=DEFAULT_SYS_PROMPT):
     model = "gemini-2.5-pro-exp-03-25"

@@ -3,21 +3,26 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Ensure html and body take full height */
+/* Ensure the entire chain from html down has 100% height */
 html,
-body {
-  height: 100%;
-  width: 100%;
+body,
+/* Target the common Next.js root structure more explicitly */
+body > div:first-child, /* Often the #__next container */
+div#__next,           /* Explicitly target #__next */
+div#__next > div      /* Target the direct child div within #__next */ {
+  height: 100%; /* Crucial for vertical resizing */
+  width: 100%;  /* Crucial for horizontal resizing */
   margin: 0;
   padding: 0;
   overflow: hidden; /* Prevent scrollbars if canvas slightly overflows */
+  position: relative; /* Added: Often helps layout consistency */
 }
 
-/* Ensure the direct child used by Next.js also takes full height.
-   This works well with the h-full/w-full classes in layout/page. */
-#__next {
-  height: 100%;
-  width: 100%;
+/* Ensure your specific page container also fills its parent */
+/* (This might be redundant if the above selectors work, but can help) */
+main { /* Or whatever element wraps your page content if not body/__next directly */
+    height: 100%;
+    width: 100%;
 }
 
 

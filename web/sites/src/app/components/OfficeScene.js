@@ -154,7 +154,7 @@ export function OfficeScene() {
 
       {/* Environment Map for reflections and ambient lighting */}
        <Suspense fallback={null}>
-         <Environment preset="city" /> {/* Changed preset for different ambiance */}
+        <Environment preset="sunset" /> {/* Changed preset for different ambiance */}
        </Suspense>
 
       {/* Floor Plane */}
