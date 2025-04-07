@@ -436,14 +436,13 @@ async def get_message_context_summary(messages_context):
 
     summary_result = await process_user_messages_with_model(summary_prompt_messages)
     timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-    summary_filename = os.path.join(gen_ai_path, ai_summaries_path, f'{
-                                    summary_prefix}_{timestamp}.md')
+    summary_filename = os.path.join(gen_ai_path, ai_summaries_path, f'{summary_prefix}_{timestamp}.md')
     with open(summary_filename, 'w') as f:
         f.write(summary_result)
 
     return summary_result
 
-def get_py_files_recursive(directory, exclude_dirs=None, exclude_files=None):
+def get_files_recursive(directory, exclude_dirs=None, exclude_files=None):
     """
     Recursively searches for Python files (.py) in a given directory and its subdirectories,
     excluding specified directories and file names.
@@ -457,7 +456,7 @@ def get_py_files_recursive(directory, exclude_dirs=None, exclude_files=None):
         list: A list of paths to found Python files.
     """
     if exclude_dirs is None:
-        exclude_dirs = ['venv']
+        exclude_dirs = ['pyds']
     if exclude_files is None:
         exclude_files = []
 
@@ -468,7 +467,19 @@ def get_py_files_recursive(directory, exclude_dirs=None, exclude_files=None):
     for root, dirs, files in os.walk(directory):
         dirs[:] = [d for d in dirs if d not in exclude_dirs]
         for file in files:
-            if file.endswith('.py') and file not in exclude_files:
+            if ( 
+                file.endswith('.py') 
+                or
+                file.endswith('.ts')
+                or
+                file.endswith('.tsx')
+                or
+                file.endswith('.js')
+                or
+                file.endswith('.jsx')
+                or
+                file.endswith('.css')
+                ) and file not in exclude_files:
                 py_files.append(os.path.join(root, file))
 
     return py_files
@@ -483,33 +494,23 @@ def code_corpus(path: str):
     Returns:
         list: A list of strings representing the contents of each Python file.
     """
-    exclude_files = [
-        'craze.py',
-        'ibot.py',
-        'nextBuilderIntegration.py',
-
-    ]
+    exclude_files = []
     exclude_dirs = [
-        'interest',
-        'pyds',
-        'backup',
+        'idea',
+        'imagev1',
         'models',
-        'sdlc',
-        'self_autoCode',
-        'self_autoCodebase',
-        'tests',
-        'to_confirm_tools',
-        'node_modules'
-
+        'pretrained',
+        'prompts',
+        'pyds',
+        'node_modules',
+        '.next',
+        '__pycache__'
     ]
-    paths = get_py_files_recursive(
+    paths = get_files_recursive(
         path, exclude_dirs=exclude_dirs, exclude_files=exclude_files)
     current_project_item = []
-    # print(paths)
 
     for file_path in paths:
-        # print(file_path)
-        # input("base_code")
         try:
             text = read_file_content(file_path)
             current_project_item.append(f'\n## {file_path}:\n{text}\n')
@@ -529,6 +530,10 @@ def read_file_content(path: str) -> str:
     """
     try:
         if path.endswith('.md') or path.endswith('.py'):
+            return "".join(open(path, 'r', encoding='utf-8')).replace('# ', '## ')
+        elif path.endswith('.ts') or path.endswith('.js') or path.endswith('.tsx') or path.endswith('.jsx'):
+            return "".join(open(path, 'r', encoding='utf-8')).replace('# ', '## ')
+        elif path.endswith('.css'):
             return "".join(open(path, 'r', encoding='utf-8')).replace('# ', '## ')
         else:
             return "".join(open(path, 'r', encoding='utf-8')).replace('# ', '## ')

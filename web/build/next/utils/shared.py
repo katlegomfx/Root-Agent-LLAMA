@@ -12,11 +12,10 @@ COMPONENT_DIR = "src/components"
 MIGRATIONS_DIR = "src/migrations"
 PAGE_DIR = "src/app"
 API_ROUTE_DIR = "src/pages/api"
-MIDDLEWARE_ROUTE_DIR = "src/middleware"
 UTILS_DIR = "src/lib/utils"
 
 venv_name = 'pyllms'
-app_name = "next-macho"
+app_name = "Flexi Office Sim"
 db_name = "flex_development"
 
 node_path = "\"C:\\Program Files\\nodejs\\node.exe\""

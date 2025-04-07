@@ -6,9 +6,9 @@ import traceback
 from colorama import Fore
 
 from Bot.build.code.cli.cli_helpers import colored_print
-from Bot.build.code.cli.next.info.add_path import prepend_file_location_check
-from Bot.build.code.cli.next.info.dry_check import find_similar_code_in_directory
-from Bot.build.code.cli.next.info.line_cleaner import process_directory
+# from Bot.build.code.cli.next.info.add_path import prepend_file_location_check
+# from Bot.build.code.cli.next.info.dry_check import find_similar_code_in_directory
+# from Bot.build.code.cli.next.info.line_cleaner import process_directory
 from Bot.build.code.llm.workflows import code_use, tool_use
 from Bot.build.code.session.constants import (
     ai_errors_path, error_file, gen_ai_path, tips)
@@ -122,8 +122,8 @@ class UserRequests:
         ignored_directories = ["node_modules",
                                ".next", "jsBuild", "jsBuilds", "pyllms", "pyds", "results"]
 
-        prepend_file_location_check(
-            directory_to_process, extensions_to_process, files_to_keep, ignored_directories)
+        # prepend_file_location_check(
+        #     directory_to_process, extensions_to_process, files_to_keep, ignored_directories)
 
         directory_to_process = "."
         extensions_to_process = ('.py',)
@@ -134,13 +134,13 @@ class UserRequests:
         # files_with_headers = list_files_with_comment_header(
         #     directory_to_process, extensions_to_process, ignored_directories)
 
-        similar_code_pieces = find_similar_code_in_directory(
-            './Bot', min_match_lines=4)
+        # similar_code_pieces = find_similar_code_in_directory(
+        #     './Bot', min_match_lines=4)
 
-        output_filepath = "prompts/report_similar_code.md"
-        write_content_to_file(similar_code_pieces, output_filepath)
+        # output_filepath = "prompts/report_similar_code.md"
+        # write_content_to_file(similar_code_pieces, output_filepath)
 
-        process_directory('./Bot')
+        # process_directory('./Bot')
 
         base_code = "".join(code_corpus('./Bot'))
         user_request = user_input.replace('self ', '')
@@ -330,6 +330,26 @@ class UserRequests:
 
         base_code = "".join(code_corpus('./web/sites'))
         user_request = user_input.replace('web ', '')
+        if len(user_request) >= 3:
+            final_request = f"\n\n# {user_request}"
+            prompt = f'''# Considering the following:\n\n{
+                base_code}{final_request}\n\n{tips}'''
+        else:
+            prompt = f'# Considering the following:\n\n{
+                base_code}'
+
+        write_content_to_file(prompt, './prompts/gen/web_prompt.md')
+
+        # code_messages = self.messages_context + load_message_template(
+        #     sys_type='python', summary=self.summary)
+        # code_messages.append({'role': 'user', 'content': prompt})
+
+        # response = await self.send_and_store_message(code_messages)
+
+    async def process_webbuilder_request(self, user_input: str, tries=0):
+
+        base_code = "".join(code_corpus('./web/build'))
+        user_request = user_input.replace('builder ', '')
         if len(user_request) >= 3:
             final_request = f"\n\n# {user_request}"
             prompt = f'''# Considering the following:\n\n{

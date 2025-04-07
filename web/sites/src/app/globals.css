@@ -1,0 +1,28 @@
+/* ./web/sites/src/app/globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Ensure html and body take full height */
+html,
+body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* Prevent scrollbars if canvas slightly overflows */
+}
+
+/* Ensure the direct child used by Next.js also takes full height.
+   This works well with the h-full/w-full classes in layout/page. */
+#__next {
+  height: 100%;
+  width: 100%;
+}
+
+
+/* Optional: Style the loading text */
+p[style*="textAlign: center"] {
+    color: #333;
+    font-family: sans-serif;
+}

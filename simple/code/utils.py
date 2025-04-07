@@ -76,31 +76,65 @@ def code_corpus(directory: str) -> List[str]:
     return corpus
 
 
+import json
+import re
+from typing import Dict, List, Union
+
 def extract_json_block(text: str) -> Union[Dict, List, str]:
     """
     Extracts and returns the first valid JSON object or array found in the text.
-    It searches for JSON blocks within triple backticks (with or without a language label)
-    and also attempts to parse the entire text as JSON if no backticks are found.
+    It handles:
+      - Code blocks labeled as JSON on the same line, e.g. ```json\n{...}\n```
+      - Code blocks labeled as JSON on a new line, e.g. ```
+        json
+        {...}
+        ```
+      - Code blocks without "json" label, e.g. ```\n{...}\n```
+      - No code blocks at all, in which case it tries to parse the entire text.
 
     Raises:
         ValueError: If no valid JSON block is found.
     """
 
-    pattern = r"```(?:\w*\n)?(.*?)```"
-    matches = re.findall(pattern, text, re.DOTALL)
+    # 1) Try code blocks labeled as JSON on the same or next line
+    #    Examples:
+    #       ```json\n{...}\n```
+    #       ```\njson\n{...}\n```
+    # We allow optional whitespace around "json" and also allow it to be on the same line or the next line.
+    json_labeled_pattern = re.compile(
+        r"```(?:\s*\n\s*)?(?:json\s*)(?:\n|\r\n)(.*?)```",
+        flags=re.DOTALL | re.IGNORECASE
+    )
 
+    matches = json_labeled_pattern.findall(text)
     if matches:
         for block in matches:
             try:
-                json_obj = json.loads(block.strip())
-                return json_obj
+                return json.loads(block.strip())
             except json.JSONDecodeError:
                 continue  # Try the next match if parsing fails
 
+    # 2) Fallback to any triple-backtick code block (no "json" label).
+    #    Example:
+    #       ```\n{...}\n```
+    generic_pattern = re.compile(
+        r"```(.*?)```",
+        flags=re.DOTALL
+    )
+    matches = generic_pattern.findall(text)
+    if matches:
+        for block in matches:
+            try:
+                return json.loads(block.strip())
+            except json.JSONDecodeError:
+                continue  # Try the next match if parsing fails
+
+    # 3) Lastly, attempt to parse the entire text as JSON.
     try:
-        json_obj = json.loads(text.strip())
-        return json_obj
+        return json.loads(text.strip())
     except json.JSONDecodeError:
         pass  # Parsing the entire text failed
 
+    # If we reach here, no valid JSON was found.
     raise ValueError("No valid JSON block found in the text.")
+

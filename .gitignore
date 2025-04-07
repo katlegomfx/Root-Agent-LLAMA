@@ -91,7 +91,6 @@ testIt.py
 gemini-native-image-edit.png
 gemini-native-image.png
 generated_image.png
-web/
 
 simp/
 Get_started_LiveAPI_tools (1).ipynb
@@ -112,3 +111,8 @@ testIt.py
 ai_code_editors_info.txt
 testIt.py
 LiveGem.ipynb
+web/build/next/utils/nextBuilder/base/public/logofinal.png
+web/build/next/utils/nextBuilder/base/.env.local
+web/build/next/utils/nextBuilder/base/data/
+web/build/next/utils/nextBuilder/base/data_macho/
+web/build/next/utils/nextBuilder/base/public_macho/logofinal.png

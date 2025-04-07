@@ -20,7 +20,6 @@ from prompt_toolkit.history import FileHistory
 from prompt_toolkit.patch_stdout import patch_stdout
 
 from Bot.build.code.gui.gui_application import GUIApplication
-from Bot.build.code.cli.next.control import execute_commands
 from Bot.build.code.llm.workflows import accomplished_request, decide_execution
 from Bot.build.code.session.config import ensure_build_directories
 from Bot.build.code.session.constants import (
@@ -215,6 +214,9 @@ class CLIApplication(UserRequests, AIRequests, CLIRequests):
 
             elif user_input.startswith('web'):
                 await self.process_website_request(user_input)
+
+            elif user_input.startswith('builder'):
+                await self.process_webbuilder_request(user_input)
       
             elif user_input.startswith("video"):
                 await self.process_video_request(user_input)
@@ -264,8 +266,8 @@ class CLIApplication(UserRequests, AIRequests, CLIRequests):
 
             elif user_input.startswith("help"):
                 self.display_help()
-            elif user_input == "build_base_nextjs":
-                execute_commands()
+            # elif user_input == "build_base_nextjs":
+            #     execute_commands()
             else:
                 await self.process_generic_request(user_input)
 

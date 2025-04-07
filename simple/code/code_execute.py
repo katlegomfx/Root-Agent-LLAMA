@@ -126,7 +126,7 @@ def execute_tool(instruction: dict, agent_manager) -> dict:
 
     try:
         if params is not None:
-            output = tool_func(params)
+            output = tool_func(**params)
         else:
             try:
                  output = tool_func()  # Try calling without args if None provided
