@@ -1,0 +1,81 @@
+{
+  "meta": {
+    "version": "2.0",
+    "generated_at": "2026-01-21T00:43:39.298246",
+    "last_updated": "2026-01-21T01:06:16.269152"
+  },
+  "items": [
+    {
+      "id": "a9dbad2b",
+      "title": "TODO: \"Read improvements.json, find the 'in_progress' item, and write code to implement the task described in its title. If it is a TODO, find the file and fix it.\"",
+      "status": "suggestion",
+      "created_at": "2026-01-21T00:44:04.592229",
+      "updated_at": "2026-01-21T00:44:04.592680",
+      "source": "scan"
+    },
+    {
+      "id": "48840e6d",
+      "title": "TODO: print(\"Scanning for TODOs...\")",
+      "status": "suggestion",
+      "created_at": "2026-01-21T00:44:04.592754",
+      "updated_at": "2026-01-21T00:44:04.592760",
+      "source": "scan"
+    },
+    {
+      "id": "72aba6a6",
+      "title": "TODO: t for t in codebase.grep(r\"TODO[:\\s]?.+\")",
+      "status": "suggestion",
+      "created_at": "2026-01-21T00:44:04.592789",
+      "updated_at": "2026-01-21T00:44:04.592794",
+      "source": "scan"
+    },
+    {
+      "id": "36d178ed",
+      "title": "TODO: title = f\"TODO: {hit['content'].strip()}\"",
+      "status": "suggestion",
+      "created_at": "2026-01-21T00:44:04.592818",
+      "updated_at": "2026-01-21T00:44:04.592822",
+      "source": "scan"
+    },
+    {
+      "id": "098f8aa8",
+      "title": "TODO: # Extract content from title \"TODO: <content>\"",
+      "status": "suggestion",
+      "created_at": "2026-01-21T00:44:04.592846",
+      "updated_at": "2026-01-21T00:44:04.592851",
+      "source": "scan"
+    },
+    {
+      "id": "a71e6a26",
+      "title": "TODO: if item[\"title\"].startswith(\"TODO: \"):",
+      "status": "suggestion",
+      "created_at": "2026-01-21T00:44:04.592874",
+      "updated_at": "2026-01-21T00:44:04.592879",
+      "source": "scan"
+    },
+    {
+      "id": "17b166a2",
+      "title": "TODO: content_to_find = item[\"title\"][6:].strip() # len(\"TODO: \") == 6",
+      "status": "suggestion",
+      "created_at": "2026-01-21T00:44:04.592901",
+      "updated_at": "2026-01-21T00:44:04.592906",
+      "source": "scan"
+    },
+    {
+      "id": "9a74a74a",
+      "title": "TODO: subparsers.add_parser(\"scan\", help=\"Scan codebase for new improvements (TODOs etc)\")",
+      "status": "suggestion",
+      "created_at": "2026-01-21T00:44:04.592930",
+      "updated_at": "2026-01-21T00:44:04.592934",
+      "source": "scan"
+    },
+    {
+      "id": "243bd7ca",
+      "title": "TODO: hits = grep('TODO')",
+      "status": "suggestion",
+      "created_at": "2026-01-21T00:44:04.592961",
+      "updated_at": "2026-01-21T00:44:04.592969",
+      "source": "scan"
+    }
+  ]
+}
